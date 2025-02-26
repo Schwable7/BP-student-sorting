@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
-from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
 from constants import STUDENTS_COUNT
 
 
@@ -17,8 +17,9 @@ def generate_students(students_count: int):
     pd.set_option('display.width', 1000)
 
     # Jmena sloupcu tabulky
-    col_names_list = ["student_uid", "trida_id", "jmeno", "prijmeni", "pohlavi", "vek", "odklad", "spolu", "ne_spolu_01",
-                      "ne_spolu_02", "ne_spolu_03", "ne_spolu_04", "ne_spolu_05", "ne_spolu_06", "ne_spolu_07"]
+    col_names_list = ["student_uid", "trida_id", "jmeno", "prijmeni", "pohlavi", "datum_narozeni", "odklad", "spolu",
+                      "ne_spolu_01", "ne_spolu_02", "ne_spolu_03", "ne_spolu_04", "ne_spolu_05", "ne_spolu_06",
+                      "ne_spolu_07"]
 
     name_list = ["Kvido", "Jarmila", "Borek", "Kazimira", "Radim", "Ludmila", "Blažena", "Horomír"]
     surname_list = ["Kido", "Jila", "Brek", "Kazra", "Kvak", "Ldila", "Blana", "Hrom"]
@@ -46,7 +47,7 @@ def generate_students(students_count: int):
 
     print(df)
 
-    df.to_excel("students_01.xlsx", sheet_name='studenti', index=False)
+    df.to_excel("students_02.xlsx", sheet_name='studenti', index=False)
 
 
 if __name__ == "__main__":

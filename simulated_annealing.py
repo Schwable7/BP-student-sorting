@@ -1,6 +1,9 @@
 import random
 import math
 import logging
+from datetime import datetime
+
+import matplotlib.pyplot as plt
 
 from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS
 from student_loader import load_students
@@ -9,11 +12,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 def fitness(classes: list[list]) -> float:
-    class_sizes = [len(cls) for cls in classes]
-    gender_balance = [sum(1 for s in cls if s["pohlavi"] == "K") for cls in classes]
+    class_sizes = [len(cls) for cls in classes]  # Number of students in each class
+    boys_balance = [sum(1 for s in cls if s["pohlavi"] == "K") for cls in classes]  # Number of boys in each class
+    girls_balance = [sum(1 for s in cls if s["pohlavi"] == "D") for cls in classes]
 
+    # Deviation from average class size
     size_std_dev = sum(abs(size - sum(class_sizes) / len(class_sizes)) for size in class_sizes)
-    gender_std_dev = sum(abs(gender - sum(gender_balance) / len(gender_balance)) for gender in gender_balance)
+
+    # Deviation from average gender distribution
+    boys_std_dev = sum(abs(boys - sum(boys_balance) / len(boys_balance)) for boys in boys_balance)
+    girls_std_dev = sum(abs(girls - sum(girls_balance) / len(girls_balance)) for girls in girls_balance)
+    gender_std_dev = boys_std_dev + girls_std_dev
 
     total_cost = size_std_dev + gender_std_dev
     logging.info(
@@ -28,46 +37,97 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
     classes = [[] for _ in range(num_classes)]
     random.shuffle(students)
 
-    # Assign students to classes in a round-robin fashion
-    for i, student in enumerate(students):
-        classes[i % num_classes].append(student)
+    # Assign students to classes randomly
+    for student in students:
+        classes[random.randint(0, num_classes - 1)].append(student)
 
     current_score = fitness(classes)  # Calculate initial cost
     temp = initial_temp
 
     logging.info(f"Starting Simulated Annealing: Initial cost = {current_score}")
 
+    costs = []
+    temperatures = []
+    exps = []
+
     for iteration in range(max_iterations):
         new_classes = [cls[:] for cls in classes]  # copy current solution
 
-        # Swap two random students from two random classes
-        class_a, class_b = random.sample(range(num_classes), 2)  # select two random classes
-        if new_classes[class_a] and new_classes[class_b]:  # ensure classes are not empty
-            idx_a, idx_b = random.randint(0, len(new_classes[class_a]) - 1), random.randint(0, len(
-                new_classes[class_b]) - 1)  # select two random students
-            new_classes[class_a][idx_a], new_classes[class_b][idx_b] = new_classes[class_b][idx_b], \
-                new_classes[class_a][idx_a]  # swap students
+        if random.random() < 0.5:  # 50% probability: swap or move
+            # Swap two random students between two classes
+            class_a, class_b = random.sample(range(num_classes), 2)
+            if new_classes[class_a] and new_classes[class_b]:
+                idx_a, idx_b = (random.randint(0, len(new_classes[class_a]) - 1),
+                                random.randint(0, len(new_classes[class_b]) - 1))
+                new_classes[class_a][idx_a], new_classes[class_b][idx_b] = new_classes[class_b][idx_b], \
+                    new_classes[class_a][idx_a]
+
+        else:
+            # Move a student from one class to another
+            class_from, class_to = random.sample(range(num_classes), 2)
+            if new_classes[class_from]:  # Ensure the source class is not empty
+                idx = random.randint(0, len(new_classes[class_from]) - 1)
+                student = new_classes[class_from].pop(idx)  # Remove student from original class
+                new_classes[class_to].append(student)  # Add student to new class
 
         new_score = fitness(new_classes)  # Calculate new cost
 
         # Accept new solution if it is better or with probability exp((current_score - new_score) / temp)
-        if new_score < current_score or math.exp((current_score - new_score) / temp) > random.random():
+        exp = math.exp((current_score - new_score) / temp)
+        exps.append(exp)
+        if new_score < current_score or exp > random.random():
             classes, current_score = new_classes, new_score
             logging.info(f"Iteration {iteration}: Accepted new state with cost {new_score}, Temperature = {temp:.2f}")
         else:
             logging.info(f"Iteration {iteration}: Rejected new state with cost {new_score}, Temperature = {temp:.2f}")
 
-        temp *= cooling_rate  # Cool down temperature
+        costs.append(current_score)
+        temperatures.append(temp)
+        temp *= cooling_rate
 
         if iteration % 100 == 0:
             logging.info(f"Iteration {iteration}: Current best cost = {current_score}, Temperature = {temp:.2f}")
 
     logging.info(f"Final solution found with cost {current_score}")
+
+    visualise_all(costs, exps, temperatures, max_iterations, f"combined_plot_{datetime.now().timestamp()}.png")
+
     return classes
 
 
+def visualise_all(costs, exps, temperatures, max_iterations, filename="combined_plot.png"):
+    plt.figure(figsize=(15, 10))
+
+    # Fitness Cost
+    plt.subplot(2, 2, 1)  # (rows, columns, index)
+    plt.plot(range(max_iterations), costs, label="Fitness Cost", color='blue')
+    plt.xlabel("Iterations")
+    plt.ylabel("Fitness Cost")
+    plt.title("Fitness Cost vs Iterations")
+    plt.legend()
+
+    # Exponential Value
+    plt.subplot(2, 2, 2)
+    plt.plot(range(len(exps)), exps, label="Acceptance probability", color='green')
+    plt.xlabel("Iterations")
+    plt.ylabel("Acceptance Probability")
+    plt.title("Decrease in Acceptance Probability Over Time")
+    plt.legend()
+
+    # Temperature
+    plt.subplot(2, 2, 3)
+    plt.plot(range(max_iterations), temperatures, label="Temperature", color='red')
+    plt.xlabel("Iterations")
+    plt.ylabel("Temperature")
+    plt.title("Temperature vs Iterations")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig(filename)
+
+
 if __name__ == "__main__":
-    students = load_students("students.xlsx")
+    students = load_students("students_02.xlsx")
     sorted_classes = simulated_annealing(
         students=students,
         num_classes=NUM_CLASSES,
