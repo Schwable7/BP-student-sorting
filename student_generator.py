@@ -47,7 +47,7 @@ def generate_students(students_count: int):
 
     print(df)
 
-    df.to_excel("students_02.xlsx", sheet_name='studenti', index=False)
+    df.to_excel("input_data/students_03.xlsx", sheet_name='studenti', index=False)
 
 
 if __name__ == "__main__":

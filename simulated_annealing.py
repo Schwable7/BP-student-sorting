@@ -123,11 +123,11 @@ def visualise_all(costs, exps, temperatures, max_iterations, filename="combined_
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(filename)
+    plt.savefig(f"output_data/{filename}")
 
 
 if __name__ == "__main__":
-    students = load_students("students_02.xlsx")
+    students = load_students("input_data/students_02.xlsx")
     sorted_classes = simulated_annealing(
         students=students,
         num_classes=NUM_CLASSES,

@@ -35,6 +35,6 @@ def load_students(filename: str) -> list[dict]:
 
 
 if __name__ == "__main__":
-    students = load_students("students_01.xlsx")
+    students = load_students("input_data/students_01.xlsx")
     for student in students:
         print(student)
