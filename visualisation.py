@@ -54,7 +54,14 @@ def visualize_sa(costs, size_devs, boys_devs, girls_devs, probabilities, tempera
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(f"output_data/{filename}")
+    plt.savefig(f"output_data/visualisation/{filename}")
+
+
+def visualise_individual(individual: list, filename):
+    plt.figure(figsize=(10, 8))
+    plt.plot(individual)
+    plt.savefig(f"output_data/visualisation/{filename}")
+
 
 
 def visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, filename):
