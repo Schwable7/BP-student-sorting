@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+import pandas as pd
 
 
 def visualize_sa(costs, size_devs, boys_devs, girls_devs, probabilities, temperatures, max_iterations, filename):
@@ -92,4 +93,20 @@ def visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, filena
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(f"output_data/{filename}")
+    plt.savefig(f"output_data/visualisation/{filename}")
+
+
+def visualize_hall_of_fame(hall_of_fame):
+    for i, (classes, score) in enumerate(hall_of_fame):
+        print(f"\n--- Hall of Fame Solution {i + 1} --- (Fitness Score: {score})")
+
+        # Create a DataFrame to show class assignments
+        data = []
+        for class_idx, cls in enumerate(classes):
+            for student in cls:
+                data.append([class_idx + 1, student["student_uid"], student["pohlavi"]])  # Add more attributes if needed
+
+        df = pd.DataFrame(data, columns=["Class", "Student ID", "Gender"])
+
+        # Display using Pandas formatting
+        print(df.to_string(index=False))  # Print without row index for clarity

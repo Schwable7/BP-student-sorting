@@ -2,10 +2,11 @@ import logging
 import random
 from datetime import datetime
 
-from constants import NUM_CLASSES, MAX_ITERATIONS, BEAM_WIDTH
+from constants import NUM_CLASSES, MAX_ITERATIONS, BEAM_WIDTH, HALL_OF_FAME_SIZE
+from data_exporter import export_hall_of_fame
 from fitness import fitness
 from student_loader import load_students
-from visualisation import visualize_bs
+from visualisation import visualize_bs, visualize_hall_of_fame
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -51,6 +52,8 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
     initial_cost, size_dev, boys_dev, girls_dev = fitness(classes)
     beam = [(classes, initial_cost, size_dev, boys_dev, girls_dev)]
 
+    hall_of_fame = []
+
     logging.info(f"Starting Beam Search: Initial cost = {initial_cost}")
 
     costs, size_devs, boys_devs, girls_devs = [], [], [], []
@@ -77,6 +80,10 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
         boys_devs.append(best_boys_dev)
         girls_devs.append(best_girls_dev)
 
+        if not any(hof[0] == classes for hof in hall_of_fame):
+            hall_of_fame.append((best_classes, current_best_cost))
+            hall_of_fame = sorted(hall_of_fame, key=lambda x: x[1])[:HALL_OF_FAME_SIZE]
+
         if current_best_cost < best_cost:
             best_cost = current_best_cost
             best_iteration_found = iteration  # Store the iteration number of improvement
@@ -86,6 +93,9 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 
     logging.info(f"Final solution found with cost {best_cost} at iteration {best_iteration_found}")
 
+    visualize_hall_of_fame(hall_of_fame)
+    export_hall_of_fame(hall_of_fame, f"BS_HoF_{datetime.now().timestamp()}.xlsx")
+
     visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, f"BS_plot_{datetime.now().timestamp()}.png")
 
     return best_classes
@@ -94,7 +104,7 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 if __name__ == "__main__":
     students = load_students("input_data/students_02.xlsx")
 
-    for i in range(5):
+    for i in range(1):
         sorted_classes = beam_search(
             students=students,
             num_classes=NUM_CLASSES,
