@@ -1,7 +1,7 @@
 import logging
 
 
-def fitness(classes: list[list]) -> tuple[float, float, float, float]:
+def fitness(classes: list[list], print_progress: bool = True) -> tuple[float, float, float, float]:
     class_sizes = [len(cls) for cls in classes]  # Number of students in each class
     boys_balance = [sum(1 for s in cls if s["pohlavi"] == "K") for cls in classes]  # Number of boys in each class
     girls_balance = [sum(1 for s in cls if s["pohlavi"] == "D") for cls in classes]
@@ -15,9 +15,10 @@ def fitness(classes: list[list]) -> tuple[float, float, float, float]:
     gender_std_dev = boys_std_dev + girls_std_dev
 
     total_cost = size_std_dev + gender_std_dev
-    logging.info(
-        f"Fitness evaluation -> Size deviation: {size_std_dev}, Boys deviation: {boys_std_dev}, "
-        f"Girls deviation: {girls_std_dev}, Total cost: {total_cost}"
-    )
+    if print_progress:
+        logging.info(
+            f"Fitness evaluation -> Size deviation: {size_std_dev}, Boys deviation: {boys_std_dev}, "
+            f"Girls deviation: {girls_std_dev}, Total cost: {total_cost}"
+        )
 
     return total_cost, size_std_dev, boys_std_dev, girls_std_dev

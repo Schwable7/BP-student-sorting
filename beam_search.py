@@ -5,8 +5,9 @@ from datetime import datetime
 from constants import NUM_CLASSES, MAX_ITERATIONS, BEAM_WIDTH, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
 from fitness import fitness
+from helper_functions import convert_classes_to_individual, swap_or_move
 from student_loader import load_students
-from visualisation import visualize_bs, visualize_hall_of_fame
+from visualisation import visualize_bs, print_hall_of_fame, plot_hall_of_fame_heatmap
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -16,26 +17,7 @@ def generate_neighbors(classes: list[list], num_neighbors: int) -> list[list[lis
 
     for _ in range(num_neighbors):
         num_classes = len(classes)
-
-        new_classes = [cls[:] for cls in classes]  # Deep copy
-
-        if random.random() < 0.5:  # Swap students
-            class_a, class_b = random.sample(range(num_classes), 2)
-            if new_classes[class_a] and new_classes[class_b]:
-                idx_a, idx_b = (
-                    random.randint(0, len(new_classes[class_a]) - 1),
-                    random.randint(0, len(new_classes[class_b]) - 1),
-                )
-                new_classes[class_a][idx_a], new_classes[class_b][idx_b] = (
-                    new_classes[class_b][idx_b],
-                    new_classes[class_a][idx_a],
-                )
-        else:  # Move a student
-            class_from, class_to = random.sample(range(num_classes), 2)
-            if new_classes[class_from]:
-                idx = random.randint(0, len(new_classes[class_from]) - 1)
-                student = new_classes[class_from].pop(idx)
-                new_classes[class_to].append(student)
+        new_classes = swap_or_move(classes, num_classes)
 
         neighbors.append(new_classes)
 
@@ -52,11 +34,9 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
     initial_cost, size_dev, boys_dev, girls_dev = fitness(classes)
     beam = [(classes, initial_cost, size_dev, boys_dev, girls_dev)]
 
-    hall_of_fame = []
-
     logging.info(f"Starting Beam Search: Initial cost = {initial_cost}")
 
-    costs, size_devs, boys_devs, girls_devs = [], [], [], []
+    costs, size_devs, boys_devs, girls_devs, hall_of_fame = [], [], [], [], []
 
     best_cost = initial_cost  # Track the best cost found
     best_iteration_found = 0  # Track the iteration number when the best cost is found
@@ -93,10 +73,12 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 
     logging.info(f"Final solution found with cost {best_cost} at iteration {best_iteration_found}")
 
-    visualize_hall_of_fame(hall_of_fame)
-    export_hall_of_fame(hall_of_fame, f"BS_HoF_{datetime.now().timestamp()}.xlsx")
+    hall_of_fame_converted = [convert_classes_to_individual(hof[0]) for hof in hall_of_fame]
+    plot_hall_of_fame_heatmap(hall_of_fame_converted, f"BS/HoF_{datetime.now().timestamp()}.png")
 
-    visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, f"BS_plot_{datetime.now().timestamp()}.png")
+    export_hall_of_fame(hall_of_fame, f"BS/HoF_{datetime.now().timestamp()}.xlsx")
+
+    visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, f"BS/multi_plot_{datetime.now().timestamp()}.png")
 
     return best_classes
 
@@ -104,7 +86,7 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 if __name__ == "__main__":
     students = load_students("input_data/students_02.xlsx")
 
-    for i in range(1):
+    for i in range(5):
         sorted_classes = beam_search(
             students=students,
             num_classes=NUM_CLASSES,

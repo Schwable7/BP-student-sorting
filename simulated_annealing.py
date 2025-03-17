@@ -6,8 +6,9 @@ from datetime import datetime
 from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
 from fitness import fitness
+from helper_functions import convert_classes_to_individual, swap_or_move
 from student_loader import load_students
-from visualisation import visualize_sa, visualize_hall_of_fame
+from visualisation import visualize_sa, print_hall_of_fame, plot_hall_of_fame_heatmap
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -24,41 +25,12 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
     current_score, size_dev, boys_dev, girls_dev = fitness(classes)  # Calculate initial cost
     temp = initial_temp
 
-    # Hall of Fame to store the best unique solutions
-    hall_of_fame = []
-
     logging.info(f"Starting Simulated Annealing: Initial cost = {current_score}")
 
-    costs = []
-    size_devs = []
-    boys_devs = []
-    girls_devs = []
-    temperatures = []
-    probabilities = []
+    costs, size_devs, boys_devs, girls_devs, probabilities, temperatures, hall_of_fame = [], [], [], [], [], [], []
 
     for iteration in range(max_iterations):
-        new_classes = [cls[:] for cls in classes]  # copy current solution
-
-        if random.random() < 0.5:  # 50% probability: swap or move
-            # Swap two random students between two classes
-            class_a, class_b = random.sample(range(num_classes), 2)
-            if new_classes[class_a] and new_classes[class_b]:
-                idx_a, idx_b = (
-                    random.randint(0, len(new_classes[class_a]) - 1),
-                    random.randint(0, len(new_classes[class_b]) - 1),
-                )
-                new_classes[class_a][idx_a], new_classes[class_b][idx_b] = (
-                    new_classes[class_b][idx_b],
-                    new_classes[class_a][idx_a],
-                )
-
-        else:
-            # Move a student from one class to another
-            class_from, class_to = random.sample(range(num_classes), 2)
-            if new_classes[class_from]:  # Ensure the source class is not empty
-                idx = random.randint(0, len(new_classes[class_from]) - 1)
-                student = new_classes[class_from].pop(idx)  # Remove student from original class
-                new_classes[class_to].append(student)  # Add student to new class
+        new_classes = swap_or_move(classes, num_classes)
 
         new_score, new_size_dev, new_boys_dev, new_girls_dev = fitness(new_classes)  # Calculate new cost
 
@@ -91,13 +63,14 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
             logging.info(f"Iteration {iteration}: Current best cost = {current_score}, Temperature = {temp:.2f}")
 
     logging.info(f"Final solution found with cost {current_score}")
+    hall_of_fame_converted = [convert_classes_to_individual(hof[0]) for hof in hall_of_fame]
+    plot_hall_of_fame_heatmap(hall_of_fame_converted, f"SA/HoF_{datetime.now().timestamp()}.png")
 
-    visualize_hall_of_fame(hall_of_fame)
-    export_hall_of_fame(hall_of_fame, f"SA_HoF_{datetime.now().timestamp()}.xlsx")
+    export_hall_of_fame(hall_of_fame, f"SA/HoF_{datetime.now().timestamp()}.xlsx")
 
     visualize_sa(
         costs, size_devs, boys_devs, girls_devs, probabilities, temperatures, max_iterations,
-        f"SA_plot_{datetime.now().timestamp()}.png"
+        f"SA/multi_plot_{datetime.now().timestamp()}.png"
     )
 
     return classes
@@ -105,7 +78,7 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
 
 if __name__ == "__main__":
     students = load_students("input_data/students_02.xlsx")
-    for i in range(1):
+    for i in range(5):
         sorted_classes = simulated_annealing(
             students=students,
             num_classes=NUM_CLASSES,
