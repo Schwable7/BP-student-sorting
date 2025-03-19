@@ -9,10 +9,11 @@ import deap.algorithms
 
 from constants import NUM_CLASSES, POPULATION_SIZE, GENERATIONS, CX_PROB, MUT_PROB
 from fitness import fitness
-from helper_functions import convert_individual_to_classes, compute_population_diversity
+from helper_functions import convert_individual_to_classes, compute_population_diversity, compute_relative_statistics, \
+    print_relative_stats, print_total_stats
 from student_loader import load_students
 from visualisation import plot_hall_of_fame_heatmap, plot_fitness_progress, plot_diversity_progress, \
-    plot_mutation_crossover
+    plot_mutation_crossover, plot_relative_statistics
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -63,8 +64,7 @@ def get_crossover_count(_):
     return crossover_counter["count"]
 
 
-def evolution() -> list[list]:
-    students = load_students("input_data/students_02.xlsx")
+def evolution(students: list[dict]) -> list[list]:
 
     toolbox = deap.base.Toolbox()
     toolbox.register("individual", create_individual, students, NUM_CLASSES)
@@ -116,8 +116,13 @@ def evolution() -> list[list]:
 
 
 if __name__ == "__main__":
-    sorted_classes = evolution()
-    for i, cls in enumerate(sorted_classes):
-        print(f"Class {i + 1}: {len(cls)} students, "
-              f"Boys = {sum(1 for s in cls if s['pohlavi'] == 'K')}, "
-              f"Girls = {sum(1 for s in cls if s['pohlavi'] == 'D')}")
+    students = load_students("input_data/students_02.xlsx")
+    sorted_classes = evolution(students)
+
+    # Compute print and visualise relative statistics
+    relative_stats = compute_relative_statistics(sorted_classes)
+    print_relative_stats(relative_stats)
+    plot_relative_statistics(relative_stats, f"EA/relative_distribution_{datetime.now().timestamp()}.png")
+
+    # Print total statistics
+    print_total_stats(students, sorted_classes)

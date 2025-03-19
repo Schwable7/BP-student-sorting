@@ -3,8 +3,6 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from constants import GENERATIONS
-
 
 def visualize_sa(costs, size_devs, boys_devs, girls_devs, probabilities, temperatures, max_iterations, filename):
     plt.figure(figsize=(15, 12))
@@ -107,13 +105,6 @@ def visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, filena
 
 
 def plot_hall_of_fame(hall_of_fame, num_students, filename):
-    """
-    Plots the Hall of Fame solutions with students on X-axis and classes on Y-axis.
-
-    :param filename: Name of the output file.
-    :param hall_of_fame: List of best individuals (assignments).
-    :param num_students: Number of students.
-    """
     plt.figure(figsize=(20, 10))
 
     # Assign unique colors for each solution in the Hall of Fame
@@ -133,12 +124,6 @@ def plot_hall_of_fame(hall_of_fame, num_students, filename):
 
 
 def plot_hall_of_fame_heatmap(hall_of_fame, filename):
-    """
-    Plots a heatmap of the Hall of Fame solutions showing student-class assignments.
-
-    :param hall_of_fame: List of best individuals (assignments).
-    :param filename: Name of the output file.
-    """
     # Convert the hall of fame list into a NumPy array (shape: num_students x num_solutions)
     hof_matrix = np.array(hall_of_fame).T  # Transpose to have students as rows, solutions as columns
 
@@ -156,11 +141,6 @@ def plot_hall_of_fame_heatmap(hall_of_fame, filename):
 
 
 def plot_fitness_progress(logbook, filename):
-    """
-    Plots the evolution of fitness values (min and avg fitness over generations).
-
-    :param logbook: Logbook object from DEAP containing evolution history.
-    """
     generations = logbook.select("gen")
     min_fitness = logbook.select("min")
     avg_fitness = logbook.select("avg")
@@ -208,17 +188,21 @@ def plot_mutation_crossover(logbook, filename):
     plt.savefig(f"output_data/visualisation/{filename}")
 
 
-def print_hall_of_fame(hall_of_fame):
-    for i, (classes, score) in enumerate(hall_of_fame):
-        print(f"\n--- Hall of Fame Solution {i + 1} --- (Fitness Score: {score})")
+def plot_relative_statistics(stats: dict, filename: str):
+    class_indices = np.arange(len(stats["class"]))  # X-axis positions
+    width = 0.4  # Width of bars
 
-        # Create a DataFrame to show class assignments
-        data = []
-        for class_idx, cls in enumerate(classes):
-            for student in cls:
-                data.append([class_idx + 1, student["student_uid"], student["pohlavi"]])  # Add more attributes if needed
+    plt.figure(figsize=(10, 5))
 
-        df = pd.DataFrame(data, columns=["Class", "Student ID", "Gender"])
+    plt.bar(class_indices - width / 2, stats["boys_ratio"], width=width, label="Boys Ratio", color="blue", alpha=0.7)
+    plt.bar(class_indices + width / 2, stats["girls_ratio"], width=width, label="Girls Ratio", color="pink", alpha=0.7)
 
-        # Display using Pandas formatting
-        print(df.to_string(index=False))  # Print without row index for clarity
+    plt.xlabel("Class")
+    plt.ylabel("Proportion")
+    plt.title("Relative Boys/Girls Distribution in Classes")
+    plt.xticks(class_indices, stats["class"])
+    plt.legend()
+    plt.grid(axis="y", linestyle="--", alpha=0.6)
+
+    plt.savefig(f"output_data/visualisation/{filename}")
+

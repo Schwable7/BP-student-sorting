@@ -6,9 +6,10 @@ from datetime import datetime
 from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
 from fitness import fitness
-from helper_functions import convert_classes_to_individual, swap_or_move
+from helper_functions import convert_classes_to_individual, swap_or_move, compute_relative_statistics, \
+    print_relative_stats, print_total_stats
 from student_loader import load_students
-from visualisation import visualize_sa, print_hall_of_fame, plot_hall_of_fame_heatmap
+from visualisation import visualize_sa, plot_hall_of_fame_heatmap, plot_relative_statistics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -63,6 +64,8 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
             logging.info(f"Iteration {iteration}: Current best cost = {current_score}, Temperature = {temp:.2f}")
 
     logging.info(f"Final solution found with cost {current_score}")
+
+    # Convert and plot hall of fame
     hall_of_fame_converted = [convert_classes_to_individual(hof[0]) for hof in hall_of_fame]
     plot_hall_of_fame_heatmap(hall_of_fame_converted, f"SA/HoF_{datetime.now().timestamp()}.png")
 
@@ -86,9 +89,11 @@ if __name__ == "__main__":
             cooling_rate=COOLING_RATE,
             max_iterations=MAX_ITERATIONS
         )
-        print(f"Total number of students: {len(students)}")
-        print(f"Num of boys = {sum(1 for s in students if s['pohlavi'] == 'K')}, "
-              f"Num of girls = {sum(1 for s in students if s['pohlavi'] == 'D')}")
-        for i, cls in enumerate(sorted_classes):
-            print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s['pohlavi'] == 'K')}, "
-                  f"Girls = {sum(1 for s in cls if s['pohlavi'] == 'D')}")
+
+        # Compute print and visualise relative statistics
+        relative_stats = compute_relative_statistics(sorted_classes)
+        print_relative_stats(relative_stats)
+        plot_relative_statistics(relative_stats, f"SA/relative_distribution_{datetime.now().timestamp()}.png")
+
+        # Print total statistics
+        print_total_stats(students, sorted_classes)

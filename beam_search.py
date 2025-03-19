@@ -2,12 +2,13 @@ import logging
 import random
 from datetime import datetime
 
-from constants import NUM_CLASSES, MAX_ITERATIONS, BEAM_WIDTH, HALL_OF_FAME_SIZE
+from constants import NUM_CLASSES, BEAM_WIDTH, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
 from fitness import fitness
-from helper_functions import convert_classes_to_individual, swap_or_move
+from helper_functions import convert_classes_to_individual, swap_or_move, compute_relative_statistics, \
+    print_relative_stats, print_total_stats
 from student_loader import load_students
-from visualisation import visualize_bs, print_hall_of_fame, plot_hall_of_fame_heatmap
+from visualisation import visualize_bs, plot_hall_of_fame_heatmap, plot_relative_statistics
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -94,10 +95,10 @@ if __name__ == "__main__":
             max_iterations=100,
         )
 
-        print(f"Total number of students: {len(students)}")
-        print(f"Num of boys = {sum(1 for s in students if s['pohlavi'] == 'K')}, "
-              f"Num of girls = {sum(1 for s in students if s['pohlavi'] == 'D')}")
+        # Compute print and visualise relative statistics
+        relative_stats = compute_relative_statistics(sorted_classes)
+        print_relative_stats(relative_stats)
+        plot_relative_statistics(relative_stats, f"BS/relative_distribution_{datetime.now().timestamp()}.png")
 
-        for i, cls in enumerate(sorted_classes):
-            print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s['pohlavi'] == 'K')}, "
-                  f"Girls = {sum(1 for s in cls if s['pohlavi'] == 'D')}")
+        # Print total statistics
+        print_total_stats(students, sorted_classes)
