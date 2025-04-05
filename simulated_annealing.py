@@ -5,9 +5,9 @@ from datetime import datetime
 
 from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
-from fitness import fitness
+from fitness import fitness, fitness2
 from helper_functions import convert_classes_to_individual, swap_or_move, compute_relative_statistics, \
-    print_relative_stats, print_total_stats
+    print_relative_stats, print_total_stats, print_total_stats2
 from student_loader import load_students
 from visualisation import visualize_sa, plot_hall_of_fame_heatmap, plot_relative_statistics
 
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 def simulated_annealing(students: list[dict], num_classes: int, initial_temp, cooling_rate,
-                        max_iterations) -> list[list]:
+                        max_iterations) -> tuple[list[list], list[float]]:
     # Randomly assign students to classes
     classes = [[] for _ in range(num_classes)]
     random.shuffle(students)
@@ -23,7 +23,12 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
     for student in students:
         classes[random.randint(0, num_classes - 1)].append(student)
 
-    current_score, size_dev, boys_dev, girls_dev = fitness(classes)  # Calculate initial cost
+    fitness_dict = fitness(classes)  # Calculate initial cost
+    current_score = fitness_dict["total_cost"]
+    size_dev = fitness_dict["size_dev"]
+    boys_dev = fitness_dict["boys_dev"]
+    girls_dev = fitness_dict["girls_dev"]
+
     temp = initial_temp
 
     logging.info(f"Starting Simulated Annealing: Initial cost = {current_score}")
@@ -33,7 +38,11 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
     for iteration in range(max_iterations):
         new_classes = swap_or_move(classes, num_classes)
 
-        new_score, new_size_dev, new_boys_dev, new_girls_dev = fitness(new_classes)  # Calculate new cost
+        new_fitness_dict = fitness(new_classes)  # Calculate new cost
+        new_score = new_fitness_dict["total_cost"]
+        new_size_dev = new_fitness_dict["size_dev"]
+        new_boys_dev = new_fitness_dict["boys_dev"]
+        new_girls_dev = new_fitness_dict["girls_dev"]
 
         # Accept new solution if it is better or with probability exp((current_score - new_score) / temp)
         acceptance_probability = math.exp((current_score - new_score) / temp)
@@ -76,13 +85,13 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
         f"SA/multi_plot_{datetime.now().timestamp()}.png"
     )
 
-    return classes
+    return classes, costs
 
 
 if __name__ == "__main__":
-    students = load_students("input_data/students_02.xlsx")
-    for i in range(5):
-        sorted_classes = simulated_annealing(
+    students = load_students("input_data/students_03.xlsx")
+    for i in range(1):
+        sorted_classes, costs = simulated_annealing(
             students=students,
             num_classes=NUM_CLASSES,
             initial_temp=INITIAL_TEMP,

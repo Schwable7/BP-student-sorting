@@ -2,6 +2,8 @@ import random
 
 import pandas as pd
 
+from constants import GENDER, MALE, FEMALE, ID, DEFERRAL, LEARNING_DISABILITIES, TALENT, DIFF_MOTHER_LANG
+
 
 def convert_classes_to_individual(classes: list[list[dict]]) -> list[int]:
     """
@@ -16,7 +18,7 @@ def convert_classes_to_individual(classes: list[list[dict]]) -> list[int]:
     # Collect all students and their assigned class
     for class_idx, student_list in enumerate(classes):
         for student in student_list:
-            students.append((student["student_uid"], class_idx))
+            students.append((student[ID], class_idx))
 
     # Sort students by their ID
     students.sort(key=lambda x: x[0])
@@ -82,8 +84,8 @@ def compute_relative_statistics(classes: list[list[dict]]) -> dict:
             boys_ratio = 0
             girls_ratio = 0
         else:
-            num_boys = sum(1 for s in cls if s["pohlavi"] == "K")
-            num_girls = sum(1 for s in cls if s["pohlavi"] == "D")
+            num_boys = sum(1 for s in cls if s[GENDER] == MALE)
+            num_girls = sum(1 for s in cls if s[GENDER] == FEMALE)
 
             boys_ratio = num_boys / total_students
             girls_ratio = num_girls / total_students
@@ -97,12 +99,23 @@ def compute_relative_statistics(classes: list[list[dict]]) -> dict:
 
 def print_total_stats(students: list[dict], classes: list[list[dict]]):
     print(f"Total number of students: {len(students)}")
-    print(f"Num of boys = {sum(1 for s in students if s['pohlavi'] == 'K')}, "
-          f"Num of girls = {sum(1 for s in students if s['pohlavi'] == 'D')}")
+    print(f"Num of boys = {sum(1 for s in students if s[GENDER] == MALE)}, "
+          f"Num of girls = {sum(1 for s in students if s[GENDER] == FEMALE)}")
     for i, cls in enumerate(classes):
-        print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s['pohlavi'] == 'K')}, "
-              f"Girls = {sum(1 for s in cls if s['pohlavi'] == 'D')}")
+        print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s[GENDER] == MALE)}, "
+              f"Girls = {sum(1 for s in cls if s[GENDER] == FEMALE)}")
 
+
+def print_total_stats2(students: list[dict], classes: list[list[dict]]):
+    print(f"Total number of students: {len(students)}")
+    print(f"Num of boys = {sum(1 for s in students if s[GENDER] == MALE)}, "
+          f"Num of girls = {sum(1 for s in students if s[GENDER] == FEMALE)}")
+    for i, cls in enumerate(classes):
+        print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s[GENDER] == MALE)}, "
+              f"Girls = {sum(1 for s in cls if s[GENDER] == FEMALE)}, Deferred = {sum(1 for s in cls if s[DEFERRAL] == 1)}, "
+              f"Learning Disabilities = {sum(1 for s in cls if s[LEARNING_DISABILITIES] == 1)}, "
+              f"Talent = {sum(1 for s in cls if s[TALENT] == 1)}, "
+              f"Different Mother Language = {sum(1 for s in cls if s[DIFF_MOTHER_LANG] == 1)}")
 
 def print_relative_stats(relative_stats: dict):
     print("Relative Boys/Girls Distribution:")
@@ -119,7 +132,7 @@ def print_hall_of_fame(hall_of_fame):
         data = []
         for class_idx, cls in enumerate(classes):
             for student in cls:
-                data.append([class_idx + 1, student["student_uid"], student["pohlavi"]])
+                data.append([class_idx + 1, student[ID], student[GENDER]])
 
         df = pd.DataFrame(data, columns=["Class", "Student ID", "Gender"])
 

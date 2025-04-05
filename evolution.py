@@ -6,6 +6,7 @@ import deap.base
 import deap.creator
 import deap.tools
 import deap.algorithms
+from deap.tools import Logbook
 
 from constants import NUM_CLASSES, POPULATION_SIZE, GENERATIONS, CX_PROB, MUT_PROB
 from fitness import fitness
@@ -30,7 +31,7 @@ def create_individual(students: list[dict], num_classes: int) -> list[int]:
 def evaluate(individual: list[int], students: list[dict], num_classes: int) -> tuple[float]:
     classes = convert_individual_to_classes(individual, students, num_classes)
 
-    score, size_dev, boys_dev, girls_dev = fitness(classes, False)
+    score = fitness(classes, False)["total_cost"]
     return score,  # Must be a tuple
 
 
@@ -64,7 +65,7 @@ def get_crossover_count(_):
     return crossover_counter["count"]
 
 
-def evolution(students: list[dict]) -> list[list]:
+def evolution(students: list[dict]) -> tuple[list[list], Logbook]:
 
     toolbox = deap.base.Toolbox()
     toolbox.register("individual", create_individual, students, NUM_CLASSES)
@@ -109,15 +110,15 @@ def evolution(students: list[dict]) -> list[list]:
     for student_idx, class_idx in enumerate(best_individual):
         best_classes[class_idx].append(students[student_idx])
 
-    final_cost = fitness(best_classes, False)[0]
+    final_cost = fitness(best_classes, False)["total_cost"]
     logging.info(f"Final solution found with cost {final_cost}")
 
-    return best_classes
+    return best_classes, logbook
 
 
 if __name__ == "__main__":
-    students = load_students("input_data/students_02.xlsx")
-    sorted_classes = evolution(students)
+    students = load_students("input_data/students_03.xlsx")
+    sorted_classes, logbook = evolution(students)
 
     # Compute print and visualise relative statistics
     relative_stats = compute_relative_statistics(sorted_classes)

@@ -1,5 +1,7 @@
 import pandas as pd
 
+from constants import ID, FIRST_NAME, LAST_NAME, GENDER
+
 
 def export_hall_of_fame(hall_of_fame, filename):
     """
@@ -12,8 +14,8 @@ def export_hall_of_fame(hall_of_fame, filename):
             data = []
             for class_idx, cls in enumerate(classes):
                 for student in cls:
-                    data.append([class_idx + 1, int(student["student_uid"]), student["jmeno"], student["prijmeni"],
-                                 student["pohlavi"]])
+                    data.append([class_idx + 1, int(student[ID]), student[FIRST_NAME], student[LAST_NAME],
+                                 student[GENDER]])
 
             # Create DataFrame
             df = pd.DataFrame(data, columns=["Class", "Student ID", "First name", "Last name", "Gender"])

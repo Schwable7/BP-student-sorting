@@ -25,14 +25,19 @@ def generate_neighbors(classes: list[list], num_neighbors: int) -> list[list[lis
     return neighbors
 
 
-def beam_search(students: list[dict], num_classes: int, beam_width: int, max_iterations: int) -> list[list]:
+def beam_search(students: list[dict], num_classes: int, beam_width: int, max_iterations: int) -> tuple[list[list], list[float]]:
     classes = [[] for _ in range(num_classes)]
     random.shuffle(students)
 
     for student in students:
         classes[random.randint(0, num_classes - 1)].append(student)
 
-    initial_cost, size_dev, boys_dev, girls_dev = fitness(classes)
+    fitness_dict = fitness(classes)
+    initial_cost = fitness_dict["total_cost"]
+    size_dev = fitness_dict["size_dev"]
+    boys_dev = fitness_dict["boys_dev"]
+    girls_dev = fitness_dict["girls_dev"]
+
     beam = [(classes, initial_cost, size_dev, boys_dev, girls_dev)]
 
     logging.info(f"Starting Beam Search: Initial cost = {initial_cost}")
@@ -47,7 +52,9 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
         for state, _, _, _, _ in beam:
             neighbors = generate_neighbors(state, num_neighbors=beam_width * 2)  # Generate twice as many candidates
             for neighbor in neighbors:
-                cost, size_dev, boys_dev, girls_dev = fitness(neighbor)
+                neighbor_fitness_dict = fitness(neighbor)
+                cost = neighbor_fitness_dict["total_cost"]
+
                 candidates.append((neighbor, cost, size_dev, boys_dev, girls_dev))
 
         # Select the best k solutions
@@ -81,14 +88,14 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 
     visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, f"BS/multi_plot_{datetime.now().timestamp()}.png")
 
-    return best_classes
+    return best_classes, costs
 
 
 if __name__ == "__main__":
     students = load_students("input_data/students_02.xlsx")
 
     for i in range(5):
-        sorted_classes = beam_search(
+        sorted_classes, costs = beam_search(
             students=students,
             num_classes=NUM_CLASSES,
             beam_width=BEAM_WIDTH,

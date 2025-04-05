@@ -1,5 +1,27 @@
 # STUDENTS GENERATOR
 STUDENTS_COUNT = 115
+MALE = "M"
+FEMALE = "F"
+ID = "id"
+GENDER = "gender"
+CLASS_ID = "class_id"
+FIRST_NAME = "first_name"
+LAST_NAME = "last_name"
+BIRTH_DATE = "birt_date"
+AGE = "age"
+DEFERRAL = "deferral"
+TOGETHER = "together"
+LEARNING_DISABILITIES = "learning_disabilities"
+TALENT = "talent"
+DIFF_MOTHER_LANG = "diff_mother_lang"
+NOT_TOGETHER_01 = "not_together_01"
+NOT_TOGETHER_02 = "not_together_02"
+NOT_TOGETHER_03 = "not_together_03"
+NOT_TOGETHER_04 = "not_together_04"
+NOT_TOGETHER_05 = "not_together_05"
+NOT_TOGETHER_06 = "not_together_06"
+NOT_TOGETHER_07 = "not_together_07"
+
 
 # COMMON
 MAX_ITERATIONS = 10000

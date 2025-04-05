@@ -3,7 +3,9 @@ import pandas as pd
 import random
 
 from datetime import datetime, timedelta
-from constants import STUDENTS_COUNT
+from constants import STUDENTS_COUNT, FEMALE, MALE, ID, CLASS_ID, FIRST_NAME, LAST_NAME, GENDER, BIRTH_DATE, DEFERRAL, \
+    TOGETHER, LEARNING_DISABILITIES, TALENT, DIFF_MOTHER_LANG, NOT_TOGETHER_01, NOT_TOGETHER_02, NOT_TOGETHER_03, \
+    NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07
 
 
 def generate_student_age():
@@ -17,33 +19,38 @@ def generate_students(students_count: int):
     pd.set_option('display.width', 1000)
 
     # Jmena sloupcu tabulky
-    col_names_list = ["student_uid", "trida_id", "jmeno", "prijmeni", "pohlavi", "datum_narozeni", "odklad", "spolu",
-                      "ne_spolu_01", "ne_spolu_02", "ne_spolu_03", "ne_spolu_04", "ne_spolu_05", "ne_spolu_06",
-                      "ne_spolu_07"]
+    col_names_list = [ID, CLASS_ID, FIRST_NAME, LAST_NAME, GENDER, BIRTH_DATE, DEFERRAL, TOGETHER,
+                      LEARNING_DISABILITIES, TALENT, DIFF_MOTHER_LANG, NOT_TOGETHER_01, NOT_TOGETHER_02,
+                      NOT_TOGETHER_03, NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07]
 
     name_list = ["Kvido", "Jarmila", "Borek", "Kazimira", "Radim", "Ludmila", "Blažena", "Horomír"]
     surname_list = ["Kido", "Jila", "Brek", "Kazra", "Kvak", "Ldila", "Blana", "Hrom"]
     class_id_list = ["A", "B", "C", "D"]
-    divka_kluk_list = ["D", "K"]
+    gender_list = [FEMALE, MALE]
 
     rand_bin_025 = [0, 0, 0, 1]
     rand_bin_01 = [1 if i in range(0, 1) else 0 for i in range(10)]
     rand_bin_005 = [1 if i in range(0, 5) else 0 for i in range(100)]
 
     df = pd.DataFrame()
-    df[col_names_list[0]] = range(students_count)
-    df[col_names_list[1]] = np.random.choice(class_id_list, students_count)
-    df[col_names_list[2]] = np.random.choice(name_list, students_count)
-    df[col_names_list[3]] = np.random.choice(surname_list, students_count)
-    df[col_names_list[4]] = np.random.choice(divka_kluk_list, students_count)
-    df[col_names_list[5]] = [generate_student_age() for _ in range(students_count)]  # Generating birth dates
-    df[col_names_list[6]] = np.random.choice(rand_bin_025, students_count)
-    df[col_names_list[7]] = np.random.choice(rand_bin_025, students_count)
-    df[col_names_list[8]] = np.random.choice(rand_bin_005, students_count)
-    df[col_names_list[9]] = np.random.choice(rand_bin_005, students_count)
+    df[ID] = range(students_count)
+    df[CLASS_ID] = np.random.choice(class_id_list, students_count)
+    df[FIRST_NAME] = np.random.choice(name_list, students_count)
+    df[LAST_NAME] = np.random.choice(surname_list, students_count)
+    df[GENDER] = np.random.choice(gender_list, students_count)
+    df[BIRTH_DATE] = [generate_student_age() for _ in range(students_count)]
+    df[DEFERRAL] = np.random.choice(rand_bin_025, students_count)
+    df[TOGETHER] = np.random.choice(rand_bin_025, students_count)
 
-    for i in range(10, len(col_names_list)):
-        df[col_names_list[i]] = np.random.choice(rand_bin_01, students_count)
+    # New rare features
+    df[LEARNING_DISABILITIES] = np.random.choice(rand_bin_005, students_count)
+    df[TALENT] = np.random.choice(rand_bin_005, students_count)
+    df[DIFF_MOTHER_LANG] = np.random.choice(rand_bin_005, students_count)
+
+    # Not together flags (1% chance)
+    for col in [NOT_TOGETHER_01, NOT_TOGETHER_02, NOT_TOGETHER_03,
+                NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07]:
+        df[col] = np.random.choice(rand_bin_01, students_count)
 
     print(df)
 

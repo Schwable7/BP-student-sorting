@@ -206,3 +206,40 @@ def plot_relative_statistics(stats: dict, filename: str):
 
     plt.savefig(f"output_data/visualisation/{filename}")
 
+
+def visualize_all(costs_sa, costs_bs, logbook, max_iterations_sa, max_iterations_bs, filename):
+    plt.figure(figsize=(12, 8))
+
+    # Fitness Cost SA
+    plt.subplot(3, 1, 1)
+    plt.plot(range(max_iterations_sa), costs_sa, label="Fitness Cost - SA", color="blue")
+    plt.xlabel("Iterations")
+    plt.ylabel("Fitness Cost SA")
+    plt.title("Fitness Cost SA vs Iterations")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+
+    # Fitness Cost BS
+    plt.subplot(3, 1, 2)
+    plt.plot(range(max_iterations_bs), costs_bs, label="Fitness Cost - BS", color="orange")
+    plt.xlabel("Iterations")
+    plt.ylabel("Fitness Cost BS")
+    plt.title("Fitness Cost BS vs Iterations")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+
+    # Fitness Progress EA
+    generations = logbook.select("gen")
+    min_fitness = logbook.select("min")
+
+    plt.subplot(3, 1, 3)
+    plt.plot(generations, min_fitness, label="Min Fitness", linestyle="-")
+
+    plt.xlabel("Generations")
+    plt.ylabel("Fitness Score")
+    plt.title("Evolution of Fitness over Generations")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+
+    plt.tight_layout()
+    plt.savefig(f"output_data/visualisation/{filename}")
