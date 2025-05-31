@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def visualize_sa(costs, size_devs, boys_devs, girls_devs, probabilities, temperatures, max_iterations, filename):
+def visualize_sa(costs, size_devs, boys_devs, girls_devs, together_penalties, not_together_penalties, max_iterations, filename):
     plt.figure(figsize=(15, 12))
 
     # Fitness Cost
@@ -39,20 +39,20 @@ def visualize_sa(costs, size_devs, boys_devs, girls_devs, probabilities, tempera
     plt.title("Girls Deviation vs Iterations")
     plt.legend()
 
-    # Acceptance Probability
+    # Together Penalties
     plt.subplot(3, 2, 5)
-    plt.plot(range(len(probabilities)), probabilities, label="Acceptance Probability", color="brown")
+    plt.plot(range(max_iterations), together_penalties, label="Together penalty", color="red")
     plt.xlabel("Iterations")
-    plt.ylabel("Acceptance Probability")
-    plt.title("Decrease in Acceptance Probability Over Time")
+    plt.ylabel("Together penalty")
+    plt.title("Together penalty vs Iterations")
     plt.legend()
 
-    # Temperature
+    # Not together penalties
     plt.subplot(3, 2, 6)
-    plt.plot(range(max_iterations), temperatures, label="Temperature", color="red")
+    plt.plot(range(max_iterations), not_together_penalties, label="Not Together penalty", color="brown")
     plt.xlabel("Iterations")
-    plt.ylabel("Temperature")
-    plt.title("Temperature vs Iterations")
+    plt.ylabel("Not Together penalty")
+    plt.title("Not Together penalty vs Iterations")
     plt.legend()
 
     plt.tight_layout()
@@ -160,6 +160,38 @@ def plot_fitness_progress(logbook, filename):
 def plot_diversity_progress(logbook, filename):
     generations = logbook.select("gen")
     diversity = logbook.select("diversity")
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(generations, diversity, linestyle="-", color="purple")
+
+    plt.xlabel("Generations")
+    plt.ylabel("Diversity Score")
+    plt.title("Diversity of Population Over Generations")
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.savefig(f"output_data/visualisation/{filename}")
+
+
+
+def plot_fitness_progress_own(logbook, filename):
+    generations = [log["gen"] for log in logbook]
+    min_fitness = [log["min"] for log in logbook]
+    avg_fitness = [log["avg"] for log in logbook]
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(generations, min_fitness, label="Min Fitness", linestyle="-")
+    plt.plot(generations, avg_fitness, label="Avg Fitness", linestyle="-")
+
+    plt.xlabel("Generations")
+    plt.ylabel("Fitness Score")
+    plt.title("Evolution of Fitness over Generations")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.savefig(f"output_data/visualisation/{filename}")
+
+
+def plot_diversity_progress_own(logbook, filename):
+    generations = [log["gen"] for log in logbook]
+    diversity = [log["diversity"] for log in logbook]
 
     plt.figure(figsize=(10, 5))
     plt.plot(generations, diversity, linestyle="-", color="purple")

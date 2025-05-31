@@ -97,7 +97,7 @@ def compute_relative_statistics(classes: list[list[dict]]) -> dict:
     return stats
 
 
-def print_total_stats(students: list[dict], classes: list[list[dict]]):
+def print_total_stats_simple(students: list[dict], classes: list[list[dict]]):
     print(f"Total number of students: {len(students)}")
     print(f"Num of boys = {sum(1 for s in students if s[GENDER] == MALE)}, "
           f"Num of girls = {sum(1 for s in students if s[GENDER] == FEMALE)}")
@@ -106,16 +106,46 @@ def print_total_stats(students: list[dict], classes: list[list[dict]]):
               f"Girls = {sum(1 for s in cls if s[GENDER] == FEMALE)}")
 
 
-def print_total_stats2(students: list[dict], classes: list[list[dict]]):
+def print_total_stats(students: list[dict], classes: list[list[dict]]):
+    total_boys = sum(1 for s in students if s[GENDER] == MALE)
+    total_girls = sum(1 for s in students if s[GENDER] == FEMALE)
+    total_deferred = sum(1 for s in students if s[DEFERRAL] == 1)
+    total_disabilities = sum(1 for s in students if s[LEARNING_DISABILITIES] == 1)
+    total_talented = sum(1 for s in students if s[TALENT] == 1)
+    total_diff_lang = sum(1 for s in students if s[DIFF_MOTHER_LANG] == 1)
+
     print(f"Total number of students: {len(students)}")
-    print(f"Num of boys = {sum(1 for s in students if s[GENDER] == MALE)}, "
-          f"Num of girls = {sum(1 for s in students if s[GENDER] == FEMALE)}")
+    print(f"Num of boys = {total_boys}, Num of girls = {total_girls}")
+    print(f"Num of deferred = {total_deferred}")
+    print(f"Num of students with learning disabilities = {total_disabilities}")
+    print(f"Num of talented students = {total_talented}")
+    print(f"Num of students with different mother language = {total_diff_lang}\n")
+
+    print("Class statistics with relative distributions (% of total category in class):")
+
     for i, cls in enumerate(classes):
-        print(f"Class {i + 1}: {len(cls)} students, Boys = {sum(1 for s in cls if s[GENDER] == MALE)}, "
-              f"Girls = {sum(1 for s in cls if s[GENDER] == FEMALE)}, Deferred = {sum(1 for s in cls if s[DEFERRAL] == 1)}, "
-              f"Learning Disabilities = {sum(1 for s in cls if s[LEARNING_DISABILITIES] == 1)}, "
-              f"Talent = {sum(1 for s in cls if s[TALENT] == 1)}, "
-              f"Different Mother Language = {sum(1 for s in cls if s[DIFF_MOTHER_LANG] == 1)}")
+        boys = sum(1 for s in cls if s[GENDER] == MALE)
+        girls = sum(1 for s in cls if s[GENDER] == FEMALE)
+        deferred = sum(1 for s in cls if s[DEFERRAL] == 1)
+        disabilities = sum(1 for s in cls if s[LEARNING_DISABILITIES] == 1)
+        talented = sum(1 for s in cls if s[TALENT] == 1)
+        diff_lang = sum(1 for s in cls if s[DIFF_MOTHER_LANG] == 1)
+
+        boys_pct = (boys / total_boys * 100) if total_boys > 0 else 0
+        girls_pct = (girls / total_girls * 100) if total_girls > 0 else 0
+        deferred_pct = (deferred / total_deferred * 100) if total_deferred > 0 else 0
+        disabilities_pct = (disabilities / total_disabilities * 100) if total_disabilities > 0 else 0
+        talented_pct = (talented / total_talented * 100) if total_talented > 0 else 0
+        diff_lang_pct = (diff_lang / total_diff_lang * 100) if total_diff_lang > 0 else 0
+
+        print(f"Class {i + 1}: {len(cls)} students")
+        print(f"  Boys: {boys} ({boys_pct:.2f}%)")
+        print(f"  Girls: {girls} ({girls_pct:.2f}%)")
+        print(f"  Deferred: {deferred} ({deferred_pct:.2f}%)")
+        print(f"  Learning Disabilities: {disabilities} ({disabilities_pct:.2f}%)")
+        print(f"  Talented: {talented} ({talented_pct:.2f}%)")
+        print(f"  Different Mother Language: {diff_lang} ({diff_lang_pct:.2f}%)\n")
+
 
 def print_relative_stats(relative_stats: dict):
     print("Relative Boys/Girls Distribution:")
@@ -138,3 +168,20 @@ def print_hall_of_fame(hall_of_fame):
 
         # Display using Pandas formatting
         print(df.to_string(index=False))  # Print without row index for clarity
+
+
+def calculate_diversity(population: list[list[list[dict]]]) -> float:
+    signatures = set()
+    for individual in population:
+        sig = tuple(sorted(frozenset(s[ID] for s in cls) for cls in individual))
+        signatures.add(sig)
+    return len(signatures) / len(population)
+
+
+def convert_to_class_vector(individual: list[list[dict]]) -> list[int]:
+    class_vector = {}
+    for class_idx, cls in enumerate(individual):
+        for student in cls:
+            class_vector[student[ID]] = class_idx
+    # Return as a list ordered by student ID (sorted)
+    return [class_vector[sid] for sid in sorted(class_vector)]

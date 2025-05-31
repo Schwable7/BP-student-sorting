@@ -24,7 +24,7 @@ NOT_TOGETHER_07 = "not_together_07"
 
 
 # COMMON
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 1000
 NUM_CLASSES = 4
 HALL_OF_FAME_SIZE = 5
 
@@ -37,6 +37,8 @@ BEAM_WIDTH = 5
 
 # EVOLUTIONARY ALGORITHM
 POPULATION_SIZE = 100
-GENERATIONS = 500
+GENERATIONS = 100
 CX_PROB = 0.8  # Crossover probability
 MUT_PROB = 0.2  # Mutation probability
+TOURNAMENT_SIZE = 3  # Tournament size
+ELITE_COUNT = 2  # Number of elite individuals to carry over to the next generation

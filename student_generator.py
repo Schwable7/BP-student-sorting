@@ -29,7 +29,7 @@ def generate_students(students_count: int):
     gender_list = [FEMALE, MALE]
 
     rand_bin_025 = [0, 0, 0, 1]
-    rand_bin_01 = [1 if i in range(0, 1) else 0 for i in range(10)]
+    rand_bin_002 = [1 if i in range(0, 2) else 0 for i in range(100)]
     rand_bin_005 = [1 if i in range(0, 5) else 0 for i in range(100)]
 
     df = pd.DataFrame()
@@ -50,11 +50,11 @@ def generate_students(students_count: int):
     # Not together flags (1% chance)
     for col in [NOT_TOGETHER_01, NOT_TOGETHER_02, NOT_TOGETHER_03,
                 NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07]:
-        df[col] = np.random.choice(rand_bin_01, students_count)
+        df[col] = np.random.choice(rand_bin_005, students_count)
 
     print(df)
 
-    df.to_excel("input_data/students_03.xlsx", sheet_name='studenti', index=False)
+    df.to_excel("input_data/students_04.xlsx", sheet_name='studenti', index=False)
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ def load_students(filename: str) -> list[dict]:
         age = datetime.today().year - birth_date.year if birth_date else None
 
         student = {
-            ID: row[ID],
+            ID: int(row[ID]),
             CLASS_ID: row[CLASS_ID],
             FIRST_NAME: row[FIRST_NAME],
             LAST_NAME: row[LAST_NAME],
