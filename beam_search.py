@@ -4,11 +4,12 @@ from datetime import datetime
 
 from constants import NUM_CLASSES, BEAM_WIDTH, HALL_OF_FAME_SIZE
 from data_exporter import export_hall_of_fame
-from fitness import fitness
+from fitness import fitness, fitness_simple
 from helper_functions import convert_classes_to_individual, swap_or_move, compute_relative_statistics, \
     print_relative_stats, print_total_stats
 from student_loader import load_students
-from visualisation import visualize_bs, plot_hall_of_fame_heatmap, plot_relative_statistics, visualize_sa
+from visualisation import visualize_bs, plot_hall_of_fame_heatmap, plot_relative_statistics, visualize_multiplot, \
+    visualize_multiplot_simple
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -34,14 +35,16 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
         classes[random.randint(0, num_classes - 1)].append(student)
 
     fitness_dict = fitness(classes)
+    together_penalty = fitness_dict["together_penalty"]
+    not_together_penalty = fitness_dict["not_together_penalty"]
+    # fitness_dict = fitness_simple(classes)
     initial_cost = fitness_dict["total_cost"]
     size_dev = fitness_dict["size_dev"]
     boys_dev = fitness_dict["boys_dev"]
     girls_dev = fitness_dict["girls_dev"]
-    together_penalty = fitness_dict["together_penalty"]
-    not_together_penalty = fitness_dict["not_together_penalty"]
 
     beam = [(classes, initial_cost, size_dev, boys_dev, girls_dev, together_penalty, not_together_penalty)]
+    # beam = [(classes, initial_cost, size_dev, boys_dev, girls_dev)]
 
     logging.info(f"Starting Beam Search: Initial cost = {initial_cost}")
 
@@ -53,25 +56,30 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
     for iteration in range(max_iterations):
         candidates = []
         for state, _, _, _, _, _, _ in beam:
+        # for state, _, _, _, _ in beam:
             neighbors = generate_neighbors(state, num_neighbors=beam_width * 2)  # Generate twice as many candidates
             for neighbor in neighbors:
                 neighbor_fitness_dict = fitness(neighbor)
+                together_penalty = neighbor_fitness_dict["together_penalty"]
+                not_together_penalty = neighbor_fitness_dict["not_together_penalty"]
+                # neighbor_fitness_dict = fitness_simple(neighbor)
                 cost = neighbor_fitness_dict["total_cost"]
                 size_dev = neighbor_fitness_dict["size_dev"]
                 boys_dev = neighbor_fitness_dict["boys_dev"]
                 girls_dev = neighbor_fitness_dict["girls_dev"]
-                together_penalty = neighbor_fitness_dict["together_penalty"]
-                not_together_penalty = neighbor_fitness_dict["not_together_penalty"]
 
                 candidates.append(
                     (neighbor, cost, size_dev, boys_dev, girls_dev, together_penalty, not_together_penalty))
+                # candidates.append((neighbor, cost, size_dev, boys_dev, girls_dev))
 
         # Select the best k solutions
         beam = sorted(candidates, key=lambda x: x[1])[:beam_width]
 
         # Track best solution
         best_classes, current_best_cost, best_size_dev, best_boys_dev, best_girls_dev, together_penalty, not_together_penalty = \
-        beam[0]
+            beam[0]
+
+        # best_classes, current_best_cost, best_size_dev, best_boys_dev, best_girls_dev = beam[0]
 
         costs.append(current_best_cost)
         size_devs.append(best_size_dev)
@@ -98,8 +106,13 @@ def beam_search(students: list[dict], num_classes: int, beam_width: int, max_ite
 
     export_hall_of_fame(hall_of_fame, f"BS/HoF_{datetime.now().timestamp()}.xlsx")
 
-    visualize_sa(costs, size_devs, boys_devs, girls_devs, tgthr_penalties, not_tgthr_penalties, max_iterations,
-                 f"BS/multi_plot_{datetime.now().timestamp()}.png")
+    visualize_multiplot(costs, size_devs, boys_devs, girls_devs, tgthr_penalties, not_tgthr_penalties, max_iterations,
+                        f"BS/multi_plot_{datetime.now().timestamp()}.png")
+
+    # visualize_multiplot_simple(
+    #     costs, size_devs, boys_devs, girls_devs, max_iterations,
+    #     f"BS/multi_plot_simple_{datetime.now().timestamp()}.png"
+    # )
 
     return best_classes, costs
 
