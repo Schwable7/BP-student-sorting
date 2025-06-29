@@ -4,7 +4,7 @@ import random
 from datetime import datetime
 
 from constants import MUT_PROB, CX_PROB, POPULATION_SIZE, NUM_CLASSES, GENERATIONS, TOURNAMENT_SIZE, ID, ELITE_COUNT, \
-    HALL_OF_FAME_SIZE
+    HALL_OF_FAME_SIZE, STUDENTS_PATH
 from fitness import fitness, fitness_simple
 from helper_functions import compute_relative_statistics, print_relative_stats, print_total_stats, calculate_diversity, \
     convert_classes_to_individual
@@ -13,8 +13,8 @@ from visualisation import plot_relative_statistics, plot_hall_of_fame_heatmap, p
     plot_diversity_progress_own, visualize_multiplot, visualize_multiplot_simple
 
 
-def generate_random_solution(students: list[dict]) -> list[list[dict]]:
-    classes = [[] for _ in range(NUM_CLASSES)]
+def generate_random_solution(students: list[dict], num_classes) -> list[list[dict]]:
+    classes = [[] for _ in range(num_classes)]
     for student in students:
         random.choice(classes).append(student)
     return classes
@@ -29,7 +29,7 @@ def tournament_selection(pop_with_fitness: list[tuple[list[list[dict]], float]],
     return selected
 
 
-def crossover(parent1: list[list[dict]], parent2: list[list[dict]]) -> tuple[list[list[dict]], list[list[dict]]]:
+def crossover(parent1: list[list[dict]], parent2: list[list[dict]], num_classes) -> tuple[list[list[dict]], list[list[dict]]]:
     student_map = {}
 
     for cls_index, cls in enumerate(parent1):
@@ -43,9 +43,9 @@ def crossover(parent1: list[list[dict]], parent2: list[list[dict]]) -> tuple[lis
             student_map.setdefault(sid, []).append(cls_index)
 
     def build_child():
-        classes = [[] for _ in range(NUM_CLASSES)]
+        classes = [[] for _ in range(num_classes)]
         for sid, choices in student_map.items():
-            chosen_class = max(set(choices), key=choices.count) if choices else random.randint(0, NUM_CLASSES - 1)
+            chosen_class = max(set(choices), key=choices.count) if choices else random.randint(0, num_classes - 1)
             student = next(s for cls in (parent1 + parent2) for s in cls if s[ID] == sid)
             classes[chosen_class].append(student)
         return classes
@@ -53,10 +53,10 @@ def crossover(parent1: list[list[dict]], parent2: list[list[dict]]) -> tuple[lis
     return build_child(), build_child()
 
 
-def mutate(individual: list[list[dict]]):
+def mutate(individual: list[list[dict]], num_classes):
     if random.random() < 0.5:
         # Swap two students between two different classes
-        class_indices = random.sample(range(NUM_CLASSES), 2)
+        class_indices = random.sample(range(num_classes), 2)
         cls1, cls2 = individual[class_indices[0]], individual[class_indices[1]]
         if cls1 and cls2:
             s1, s2 = random.choice(cls1), random.choice(cls2)
@@ -74,7 +74,7 @@ def mutate(individual: list[list[dict]]):
             smallest.append(student)
 
 
-def balance_classes(classes: list[list[dict]]) -> list[list[dict]]:
+def balance_classes(classes: list[list[dict]], num_classes) -> list[list[dict]]:
     student_ids = set()
     unique_students = []
 
@@ -85,16 +85,17 @@ def balance_classes(classes: list[list[dict]]) -> list[list[dict]]:
                 unique_students.append(student)
 
     # Clear and reassign randomly, but preserve number of classes
-    new_classes = [[] for _ in range(NUM_CLASSES)]
+    new_classes = [[] for _ in range(num_classes)]
     for student in unique_students:
         random.choice(new_classes).append(student)
 
     return new_classes
 
 
-def evolutionary_algorithm(students: list[dict]):
+def evolutionary_algorithm(students: list[dict], dataset, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS):
+    start_time = datetime.now()
     # Initialize population
-    population = [generate_random_solution(students) for _ in range(POPULATION_SIZE)]
+    population = [generate_random_solution(students, num_classes) for _ in range(POPULATION_SIZE)]
 
     best_solution = None
     best_fitness = float('inf')
@@ -103,7 +104,7 @@ def evolutionary_algorithm(students: list[dict]):
     hall_of_fame = []  # will hold best solutions (student → class ID) over time
     costs, size_devs, boys_devs, girls_devs, tgthr_penalties, not_tgthr_penalties, probabilities, temperatures = [], [], [], [], [], [], [], []
 
-    for generation in range(GENERATIONS):
+    for generation in range(generations):
         # Evaluate fitness of population
         evaluated = [(individual, fitness(individual, False)) for individual in population]
         # evaluated = [(individual, fitness_simple(individual, False)) for individual in population]
@@ -160,34 +161,41 @@ def evolutionary_algorithm(students: list[dict]):
             parent2 = random.choice(selected)
 
             if random.random() < CX_PROB:
-                child1, child2 = crossover(parent1, parent2)
+                child1, child2 = crossover(parent1, parent2, num_classes)
             else:
                 child1, child2 = copy.deepcopy(parent1), copy.deepcopy(parent2)
 
             if random.random() < MUT_PROB:
-                mutate(child1)
+                mutate(child1, num_classes)
             if random.random() < MUT_PROB:
-                mutate(child2)
+                mutate(child2, num_classes)
 
             next_generation.extend([child1, child2])
 
         next_generation = elites + next_generation[:POPULATION_SIZE - ELITE_COUNT]
         population = next_generation
 
+    end_time = datetime.now()
+    execution_time = end_time - start_time
+    logging.info(f"Optimization completed in {execution_time} seconds")
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    plot_fitness_progress_own(logbook, f"EA2/fitness_progress_{timestamp}.png")
-    plot_diversity_progress_own(logbook, f"EA2/diversity_progress_{timestamp}.png")
-    plot_hall_of_fame_heatmap(hall_of_fame, f"EA2/hall_of_fame_{timestamp}.png")
+    plot_fitness_progress_own(logbook, f"EA2/fitness_progress_{timestamp}.png", dataset)
+    plot_diversity_progress_own(logbook, f"EA2/diversity_progress_{timestamp}.png", dataset)
+    plot_hall_of_fame_heatmap(hall_of_fame, f"EA2/hall_of_fame_{timestamp}.png", dataset)
     visualize_multiplot(costs, size_devs, boys_devs, girls_devs, tgthr_penalties,
-                        not_tgthr_penalties, GENERATIONS, f"EA2/multi_plot_{timestamp}.png")
+                        not_tgthr_penalties, generations, f"EA2/multi_plot_{timestamp}.png", dataset)
 
     # visualize_multiplot_simple(
-    #     costs, size_devs, boys_devs, girls_devs, GENERATIONS,
-    #     f"EA2/multi_plot_simple_{datetime.now().timestamp()}.png"
+    #     costs, size_devs, boys_devs, girls_devs, generations,
+    #     f"EA2/multi_plot_simple_{datetime.now().timestamp()}.png", dataset
     # )
 
-    return best_solution
+    relative_stats = compute_relative_statistics(students, best_solution)
+    print_relative_stats(relative_stats)
+    plot_relative_statistics(relative_stats, f"EA2/relative_distribution_{datetime.now().timestamp()}.png", dataset)
+    print_total_stats(students, best_solution)
+    return best_solution, costs, logbook, execution_time, relative_stats
 
 
 # === MAIN ===
@@ -195,11 +203,8 @@ def evolutionary_algorithm(students: list[dict]):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    students = load_students("input_data/students_04.xlsx")
+    students = load_students(STUDENTS_PATH)
     for i in range(1):
-        best = evolutionary_algorithm(students)
+        best, costs, logbook, execution_time, relative_stats = evolutionary_algorithm(students, "basic")
 
-        relative_stats = compute_relative_statistics(best)
-        print_relative_stats(relative_stats)
-        plot_relative_statistics(relative_stats, f"EA2/relative_distribution_{datetime.now().timestamp()}.png")
-        print_total_stats(students, best)
+

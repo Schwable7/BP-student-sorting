@@ -3,314 +3,429 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from constants import BEAM_SEARCH, SIMULATED_ANNEALING, EA_DEAP, EA_OWN
 
-def visualize_multiplot(costs, size_devs, boys_devs, girls_devs, together_penalties, not_together_penalties, max_iterations, filename):
+# ============================================================================
+# Global font‑size constants – adjust once, propagate everywhere
+# ============================================================================
+FONT_TITLE = 16   # Plot / subplot titles
+FONT_LABEL = 16   # Axis labels (x / y)
+FONT_TICKS = 14   # Tick‑label text on both axes
+FONT_LEGEND = 12  # Legend text
+
+# Optionally push defaults to rcParams so library / third‑party plots match too
+plt.rcParams.update({
+    "axes.titlesize": FONT_TITLE,
+    "axes.labelsize": FONT_LABEL,
+    "xtick.labelsize": FONT_TICKS,
+    "ytick.labelsize": FONT_TICKS,
+    "legend.fontsize": FONT_LEGEND,
+})
+
+# ----------------------------------------------------------------------------
+# 1. Multi‑metric six‑subplot visualisation
+# ----------------------------------------------------------------------------
+
+def visualize_multiplot(costs, size_devs, boys_devs, girls_devs,
+                        together_penalties, not_together_penalties,
+                        max_iterations, filename, dataset):
+    """Six metrics, 3×2 grid."""
     plt.figure(figsize=(15, 12))
 
-    # Fitness Cost
-    plt.subplot(3, 2, 1)
-    plt.plot(range(max_iterations), costs, label="Fitness Cost", color="blue")
-    plt.xlabel("Iterations")
-    plt.ylabel("Fitness Cost")
-    plt.title("Fitness Cost vs Iterations")
-    plt.legend()
+    plots = [
+        ("Celková fitness", costs, "Celková fitness", "blue"),
+        ("Velikost třídy - odchylka", size_devs, "Velikost třídy - odchylka", "orange"),
+        ("Chlapci - odchylka", boys_devs, "Chlapci - odchylka", "green"),
+        ("Dívky - odchylka", girls_devs, "Dívky - odchylka", "purple"),
+        ("Spolu - penalizace", together_penalties, "Spolu - penalizace", "red"),
+        ("Ne-spolu - penalizace", not_together_penalties, "Ne-spolu - penalizace", "brown"),
+    ]
 
-    # Size Deviation
-    plt.subplot(3, 2, 2)
-    plt.plot(range(max_iterations), size_devs, label="Size Deviation", color="orange")
-    plt.xlabel("Iterations")
-    plt.ylabel("Size Deviation")
-    plt.title("Class Size Deviation vs Iterations")
-    plt.legend()
-
-    # Boys Deviation
-    plt.subplot(3, 2, 3)
-    plt.plot(range(max_iterations), boys_devs, label="Boys Deviation", color="green")
-    plt.xlabel("Iterations")
-    plt.ylabel("Boys Deviation")
-    plt.title("Boys Deviation vs Iterations")
-    plt.legend()
-
-    # Girls Deviation
-    plt.subplot(3, 2, 4)
-    plt.plot(range(max_iterations), girls_devs, label="Girls Deviation", color="purple")
-    plt.xlabel("Iterations")
-    plt.ylabel("Girls Deviation")
-    plt.title("Girls Deviation vs Iterations")
-    plt.legend()
-
-    # Together Penalties
-    plt.subplot(3, 2, 5)
-    plt.plot(range(max_iterations), together_penalties, label="Together penalty", color="red")
-    plt.xlabel("Iterations")
-    plt.ylabel("Together penalty")
-    plt.title("Together penalty vs Iterations")
-    plt.legend()
-
-    # Not together penalties
-    plt.subplot(3, 2, 6)
-    plt.plot(range(max_iterations), not_together_penalties, label="Not Together penalty", color="brown")
-    plt.xlabel("Iterations")
-    plt.ylabel("Not Together penalty")
-    plt.title("Not Together penalty vs Iterations")
-    plt.legend()
+    for i, (title, data, ylabel, color) in enumerate(plots, start=1):
+        plt.subplot(3, 2, i)
+        plt.plot(range(max_iterations), data, label=title, color=color)
+        plt.xlabel("Iterace", fontsize=FONT_LABEL)
+        plt.ylabel(ylabel, fontsize=FONT_LABEL)
+        plt.title(f"{title} vs Iterace", fontsize=FONT_TITLE)
+        plt.xticks(fontsize=FONT_TICKS)
+        plt.yticks(fontsize=FONT_TICKS)
+        plt.legend(fontsize=FONT_LEGEND)
 
     plt.tight_layout()
-    plt.savefig(f"output_data/visualisation/{filename}")
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()
 
+# ----------------------------------------------------------------------------
+# 2. Simplified 4‑subplot variant
+# ----------------------------------------------------------------------------
 
-def visualize_multiplot_simple(costs, size_devs, boys_devs, girls_devs, max_iterations, filename):
+def visualize_multiplot_simple(costs, size_devs, boys_devs, girls_devs,
+                               max_iterations, filename, dataset):
+    """Four metrics, 2×2 grid."""
     plt.figure(figsize=(15, 12))
 
-    # Fitness Cost
-    plt.subplot(2, 2, 1)
-    plt.plot(range(max_iterations), costs, label="Fitness Cost", color="blue")
-    plt.xlabel("Iterations")
-    plt.ylabel("Fitness Cost")
-    plt.title("Fitness Cost vs Iterations")
-    plt.legend()
+    plots = [
+        ("Celková fitness", costs, "Celková fitness", "blue"),
+        ("Velikost třídy - odchylka", size_devs, "Velikost třídy - odchylka", "orange"),
+        ("Chlapci - odchylka", boys_devs, "Chlapci - odchylka", "green"),
+        ("Dívky - odchylka", girls_devs, "Dívky - odchylka", "purple"),
+    ]
 
-    # Size Deviation
-    plt.subplot(2, 2, 2)
-    plt.plot(range(max_iterations), size_devs, label="Size Deviation", color="orange")
-    plt.xlabel("Iterations")
-    plt.ylabel("Size Deviation")
-    plt.title("Class Size Deviation vs Iterations")
-    plt.legend()
-
-    # Boys Deviation
-    plt.subplot(2, 2, 3)
-    plt.plot(range(max_iterations), boys_devs, label="Boys Deviation", color="green")
-    plt.xlabel("Iterations")
-    plt.ylabel("Boys Deviation")
-    plt.title("Boys Deviation vs Iterations")
-    plt.legend()
-
-    # Girls Deviation
-    plt.subplot(2, 2, 4)
-    plt.plot(range(max_iterations), girls_devs, label="Girls Deviation", color="purple")
-    plt.xlabel("Iterations")
-    plt.ylabel("Girls Deviation")
-    plt.title("Girls Deviation vs Iterations")
-    plt.legend()
+    for i, (title, data, ylabel, color) in enumerate(plots, start=1):
+        plt.subplot(2, 2, i)
+        plt.plot(range(max_iterations), data, label=title, color=color)
+        plt.xlabel("Iterations", fontsize=FONT_LABEL)
+        plt.ylabel(ylabel, fontsize=FONT_LABEL)
+        plt.title(f"{title} vs Iterations", fontsize=FONT_TITLE)
+        plt.xticks(fontsize=FONT_TICKS)
+        plt.yticks(fontsize=FONT_TICKS)
+        plt.legend(fontsize=FONT_LEGEND)
 
     plt.tight_layout()
-    plt.savefig(f"output_data/visualisation/{filename}")
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()
 
+# ----------------------------------------------------------------------------
+# 3. Heatmap of hall‑of‑fame assignments
+# ----------------------------------------------------------------------------
 
-def visualise_individual(individual: list, filename):
+def plot_hall_of_fame_heatmap(hall_of_fame, filename, dataset):
+    hof_matrix = np.array(hall_of_fame).T  # Students × Solutions
+
     plt.figure(figsize=(10, 8))
-    plt.plot(individual)
-    plt.savefig(f"output_data/visualisation/{filename}")
+    sns.heatmap(
+        hof_matrix,
+        cmap="viridis",
+        annot=False,
+        cbar=True,
+        linewidths=0.5,
+        xticklabels=[f"Řešení {i + 1}" for i in range(len(hall_of_fame))],
+        yticklabels=False,
+    )
 
+    plt.xlabel("Hall of Fame", fontsize=FONT_LABEL)
+    plt.ylabel("Studenti", fontsize=FONT_LABEL)
+    plt.title("Hall of Fame - Rozřazení studentů do tříd (Heatmap)", fontsize=FONT_TITLE)
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()
 
-def visualize_bs(costs, size_devs, boys_devs, girls_devs, max_iterations, filename):
-    plt.figure(figsize=(12, 8))
+# ----------------------------------------------------------------------------
+# 4. Fitness/diversity progress (DEAP logbook version)
+# ----------------------------------------------------------------------------
 
-    # Fitness Cost
-    plt.subplot(2, 2, 1)
-    plt.plot(range(max_iterations), costs, label="Fitness Cost", color="blue")
-    plt.xlabel("Iterations")
-    plt.ylabel("Fitness Cost")
-    plt.title("Fitness Cost vs Iterations")
-    plt.legend()
+def _line_plot(generations, series, labels, ylabel, title, filename, dataset):
+    plt.figure(figsize=(10, 5))
+    for data, label in zip(series, labels):
+        plt.plot(generations, data, label=label, linestyle="-")
 
-    # Size Deviation
-    plt.subplot(2, 2, 2)
-    plt.plot(range(max_iterations), size_devs, label="Size Deviation", color="orange")
-    plt.xlabel("Iterations")
-    plt.ylabel("Size Deviation")
-    plt.title("Class Size Deviation vs Iterations")
-    plt.legend()
-
-    # Boys Deviation
-    plt.subplot(2, 2, 3)
-    plt.plot(range(max_iterations), boys_devs, label="Boys Deviation", color="green")
-    plt.xlabel("Iterations")
-    plt.ylabel("Boys Deviation")
-    plt.title("Boys Deviation vs Iterations")
-    plt.legend()
-
-    # Girls Deviation
-    plt.subplot(2, 2, 4)
-    plt.plot(range(max_iterations), girls_devs, label="Girls Deviation", color="purple")
-    plt.xlabel("Iterations")
-    plt.ylabel("Girls Deviation")
-    plt.title("Girls Deviation vs Iterations")
-    plt.legend()
-
+    plt.xlabel("Generace", fontsize=FONT_LABEL)
+    plt.ylabel(ylabel, fontsize=FONT_LABEL)
+    plt.title(title, fontsize=FONT_TITLE)
+    plt.legend(fontsize=FONT_LEGEND)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
     plt.tight_layout()
-    plt.savefig(f"output_data/visualisation/{filename}")
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()
 
 
-def plot_hall_of_fame(hall_of_fame, num_students, filename):
-    plt.figure(figsize=(20, 10))
-
-    # Assign unique colors for each solution in the Hall of Fame
-    colors = plt.cm.get_cmap('tab10', len(hall_of_fame))
-
-    for idx, individual in enumerate(hall_of_fame):
-        x = np.arange(num_students)  # Student indices
-        y = individual  # Assigned classes
-        plt.scatter(x, y, label=f"Solution {idx + 1}", alpha=0.6, color=colors(idx), s=20)
-
-    plt.xlabel("Students")
-    plt.ylabel("Classes")
-    plt.title("Hall of Fame - Student Class Assignments")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.5)
-    plt.savefig(f"output_data/visualisation/{filename}")
-
-
-def plot_hall_of_fame_heatmap(hall_of_fame, filename):
-    # Convert the hall of fame list into a NumPy array (shape: num_students x num_solutions)
-    hof_matrix = np.array(hall_of_fame).T  # Transpose to have students as rows, solutions as columns
-
-    plt.figure(figsize=(10, 8))
-
-    # Create heatmap using Seaborn
-    sns.heatmap(hof_matrix, cmap="viridis", annot=False, cbar=True, linewidths=0.5,
-                xticklabels=[f"Sol {i + 1}" for i in range(len(hall_of_fame))],
-                yticklabels=False)  # Hide student labels for large data
-
-    plt.xlabel("Hall of Fame Solutions")
-    plt.ylabel("Students")
-    plt.title("Hall of Fame - Student Class Assignments (Heatmap)")
-    plt.savefig(f"output_data/visualisation/{filename}")
-
-
-def plot_fitness_progress(logbook, filename):
+def plot_fitness_progress(logbook, filename, dataset):
     generations = logbook.select("gen")
     min_fitness = logbook.select("min")
     avg_fitness = logbook.select("avg")
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(generations, min_fitness, label="Min Fitness", linestyle="-")
-    plt.plot(generations, avg_fitness, label="Avg Fitness", linestyle="-")
+    _line_plot(
+        generations,
+        [min_fitness, avg_fitness],
+        ["Min Fitness", "Avg Fitness"],
+        "Fitness Score",
+        "Evolution of Fitness over Generations",
+        filename,
+        dataset
+    )
 
-    plt.xlabel("Generations")
-    plt.ylabel("Fitness Score")
-    plt.title("Evolution of Fitness over Generations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.savefig(f"output_data/visualisation/{filename}")
 
-
-def plot_diversity_progress(logbook, filename):
+def plot_diversity_progress(logbook, filename, dataset):
     generations = logbook.select("gen")
     diversity = logbook.select("diversity")
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(generations, diversity, linestyle="-", color="purple")
+    _line_plot(
+        generations,
+        [diversity],
+        ["Diverzita"],
+        "Skóre Diverzity",
+        "Diverzita populace v průběhu generací",
+        filename,
+        dataset
+    )
 
-    plt.xlabel("Generations")
-    plt.ylabel("Diversity Score")
-    plt.title("Diversity of Population Over Generations")
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.savefig(f"output_data/visualisation/{filename}")
+# ----------------------------------------------------------------------------
+# 5. Fitness/diversity progress (own logbook dict version)
+# ----------------------------------------------------------------------------
 
-
-
-def plot_fitness_progress_own(logbook, filename):
+def plot_fitness_progress_own(logbook, filename, dataset):
     generations = [log["gen"] for log in logbook]
     min_fitness = [log["min"] for log in logbook]
     avg_fitness = [log["avg"] for log in logbook]
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(generations, min_fitness, label="Min Fitness", linestyle="-")
-    plt.plot(generations, avg_fitness, label="Avg Fitness", linestyle="-")
+    _line_plot(
+        generations,
+        [min_fitness, avg_fitness],
+        ["Min Fitness", "Avg Fitness"],
+        "Fitness Score",
+        "Evolution of Fitness over Generations",
+        filename,
+        dataset
+    )
 
-    plt.xlabel("Generations")
-    plt.ylabel("Fitness Score")
-    plt.title("Evolution of Fitness over Generations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.savefig(f"output_data/visualisation/{filename}")
 
-
-def plot_diversity_progress_own(logbook, filename):
+def plot_diversity_progress_own(logbook, filename, dataset):
     generations = [log["gen"] for log in logbook]
     diversity = [log["diversity"] for log in logbook]
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(generations, diversity, linestyle="-", color="purple")
+    _line_plot(
+        generations,
+        [diversity],
+        ["Diverzita"],
+        "Skóre Diverzity",
+        "Diverzita populace v průběhu generací",
+        filename,
+        dataset
+    )
 
-    plt.xlabel("Generations")
-    plt.ylabel("Diversity Score")
-    plt.title("Diversity of Population Over Generations")
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.savefig(f"output_data/visualisation/{filename}")
+# ----------------------------------------------------------------------------
+# 6. Relative statistics bar plot
+# ----------------------------------------------------------------------------
 
+def plot_relative_statistics(stats: dict, filename: str, dataset: str):
+    class_indices = np.arange(len(stats["class"]))
+    width = 0.1
+    bar_count = 7
 
-def plot_mutation_crossover(logbook, filename):
-    generations = logbook.select("gen")
-    mutations = logbook.select("mutations")
-    crossovers = logbook.select("crossovers")
+    plt.figure(figsize=(14, 6))
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(generations, mutations, label="Mutations", linestyle="-", color="red")
-    plt.plot(generations, crossovers, label="Crossovers", linestyle="-", color="blue")
+    bar_data = [
+        ("Celkový počet", stats["total_ratio"], "#1f77b4"),
+        ("Chlapci", stats["boys_ratio"], "#4e79a7"),
+        ("Dívky", stats["girls_ratio"], "#f28e2c"),
+        ("Odklad", stats["deferred_ratio"], "#e15759"),
+        ("Spec.uč.potř.", stats["disabilities_ratio"], "#76b7b2"),
+        ("Nadání", stats["talented_ratio"], "#59a14f"),
+        ("Mateřský jazyk", stats["diff_lang_ratio"], "#edc948"),
+    ]
 
-    plt.xlabel("Generations")
-    plt.ylabel("Count")
-    plt.title("Mutation and Crossover Rates Over Generations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.savefig(f"output_data/visualisation/{filename}")
+    for i, (label, values, color) in enumerate(bar_data):
+        offset = (i - bar_count / 2) * width + width / 2
+        plt.bar(class_indices + offset, values, width=width, label=label, color=color, alpha=0.9)
 
+    plt.xlabel("Třída", fontsize=FONT_LABEL)
+    plt.ylabel("Proporce", fontsize=FONT_LABEL)
+    plt.title("Relativní rozložení charakteristik studentů ve třídách", fontsize=FONT_TITLE)
+    plt.xticks(class_indices, stats["class"], rotation=0, fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
 
-def plot_relative_statistics(stats: dict, filename: str):
-    class_indices = np.arange(len(stats["class"]))  # X-axis positions
-    width = 0.4  # Width of bars
+    plt.grid(axis="y", linestyle="--", alpha=0.5)
+    # basic dataset
+    if dataset.__contains__("large"):
+        plt.ylim(0, 0.3)
+    else:
+        plt.ylim(0, 0.6)
+    # large dataset
+    # plt.ylim(0, 0.3)
 
-    plt.figure(figsize=(10, 5))
+    plt.legend(title="Charakteristika", bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0.)
+    plt.tight_layout()
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}", bbox_inches="tight")
+    plt.close()
 
-    plt.bar(class_indices - width / 2, stats["boys_ratio"], width=width, label="Boys Ratio", color="blue", alpha=0.7)
-    plt.bar(class_indices + width / 2, stats["girls_ratio"], width=width, label="Girls Ratio", color="pink", alpha=0.7)
+# ----------------------------------------------------------------------------
+# 7. Aggregate fitness comparison (combined + separate)
+# ----------------------------------------------------------------------------
 
-    plt.xlabel("Class")
-    plt.ylabel("Proportion")
-    plt.title("Relative Boys/Girls Distribution in Classes")
-    plt.xticks(class_indices, stats["class"])
-    plt.legend()
-    plt.grid(axis="y", linestyle="--", alpha=0.6)
-
-    plt.savefig(f"output_data/visualisation/{filename}")
-
-
-def visualize_all(costs_sa, costs_bs, logbook, max_iterations_sa, max_iterations_bs, filename):
+def compare_algorithms_graph(all_runs: dict[str, list[list[float]]], filename: str, dataset):
     plt.figure(figsize=(12, 8))
 
-    # Fitness Cost SA
-    plt.subplot(3, 1, 1)
-    plt.plot(range(max_iterations_sa), costs_sa, label="Fitness Cost - SA", color="blue")
-    plt.xlabel("Iterations")
-    plt.ylabel("Fitness Cost SA")
-    plt.title("Fitness Cost SA vs Iterations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
+    colors = {
+        BEAM_SEARCH: "purple",
+        SIMULATED_ANNEALING: "red",
+        EA_DEAP: "blue",
+        EA_OWN: "green",
+    }
 
-    # Fitness Cost BS
-    plt.subplot(3, 1, 2)
-    plt.plot(range(max_iterations_bs), costs_bs, label="Fitness Cost - BS", color="orange")
-    plt.xlabel("Iterations")
-    plt.ylabel("Fitness Cost BS")
-    plt.title("Fitness Cost BS vs Iterations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
+    for algo_name, runs in all_runs.items():
+        runs_array = np.array(runs)
+        mean_vals = runs_array.mean(axis=0)
+        std_vals = runs_array.std(axis=0)
+        upper = mean_vals + std_vals
+        lower = mean_vals - std_vals
 
-    # Fitness Progress EA
-    generations = logbook.select("gen")
-    min_fitness = logbook.select("min")
+        color = colors.get(algo_name, None)
+        plt.fill_between(range(len(mean_vals)), lower, upper, alpha=0.2, label=f"{algo_name} ±1 SD", color=color)
+        plt.plot(mean_vals, label=f"{algo_name} Průměr", color=color)
 
-    plt.subplot(3, 1, 3)
-    plt.plot(generations, min_fitness, label="Min Fitness", linestyle="-")
-
-    plt.xlabel("Generations")
-    plt.ylabel("Fitness Score")
-    plt.title("Evolution of Fitness over Generations")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.6)
-
+    plt.xlabel("Iterace", fontsize=FONT_LABEL)
+    plt.ylabel("Fitness", fontsize=FONT_LABEL)
+    plt.title("Srovnání algoritmů – vývoj fitness v čase", fontsize=FONT_TITLE)
+    plt.legend(fontsize=FONT_LEGEND)
+    plt.grid(True)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
     plt.tight_layout()
-    plt.savefig(f"output_data/visualisation/{filename}")
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()
+
+
+
+def compare_algorithms_separate_graph(all_runs: dict[str, list[list[float]]], filename: str, dataset):
+    """One subplot per algorithm (max 4), fixed axes."""
+    colors = {
+        BEAM_SEARCH: "purple",
+        SIMULATED_ANNEALING: "red",
+        EA_DEAP: "blue",
+        EA_OWN: "green",
+    }
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes = axes.flatten()
+
+    for idx, (algo_name, runs) in enumerate(all_runs.items()):
+        if idx >= 4:
+            break
+
+        ax = axes[idx]
+        runs_array = np.array(runs)
+        mean_vals = runs_array.mean(axis=0)
+        min_vals = runs_array.min(axis=0)
+        max_vals = runs_array.max(axis=0)
+
+        x_vals = range(len(mean_vals))
+        color = colors.get(algo_name, "gray")
+
+        ax.fill_between(x_vals, min_vals, max_vals, alpha=0.2, color=color, label="min–max")
+        ax.plot(x_vals, mean_vals, color=color, label="průměr")
+
+        ax.set_xlim(left=0)
+
+        # basic dataset
+        # ax.set_ylim(top=40, bottom=0)
+
+        # skewed dataset
+        # ax.set_ylim(top=0.03, bottom=0.003)
+
+        # large dataset
+        # ax.set_ylim(top=0.025, bottom=0)
+
+        ax.set_title(algo_name, fontsize=FONT_TITLE)
+        ax.set_xlabel("Iterace", fontsize=FONT_LABEL)
+        ax.set_ylabel("Fitness", fontsize=FONT_LABEL)
+        ax.grid(True)
+        ax.legend(fontsize=FONT_LEGEND)
+        ax.tick_params(axis="both", labelsize=FONT_TICKS)
+
+    # Remove unused subplots if fewer than 4 algorithms
+    for j in range(len(all_runs), 4):
+        fig.delaxes(axes[j])
+
+    fig.suptitle("Srovnání algoritmů – vývoj fitness v čase", fontsize=FONT_TITLE)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close(fig)
+
+
+def compare_algorithms_sd(all_runs: dict[str, list[list[float]]], filename: str, dataset):
+    """One subplot per algorithm (max 4), fixed axes."""
+    colors = {
+        BEAM_SEARCH: "purple",
+        SIMULATED_ANNEALING: "red",
+        EA_DEAP: "blue",
+        EA_OWN: "green",
+    }
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes = axes.flatten()
+
+    for idx, (algo_name, runs) in enumerate(all_runs.items()):
+        if idx >= 4:
+            break
+
+        ax = axes[idx]
+        runs_array = np.array(runs)
+        mean_vals = runs_array.mean(axis=0)
+        std_vals = runs_array.std(axis=0)
+        upper = mean_vals + std_vals
+        lower = mean_vals - std_vals
+
+        x_vals = range(len(mean_vals))
+        color = colors.get(algo_name, "gray")
+
+        ax.fill_between(x_vals, lower, upper, alpha=0.2, color=color, label="±1 SD")
+        ax.plot(x_vals, mean_vals, color=color, label="Průměr")
+
+        ax.set_xlim(left=0)
+
+        # basic dataset
+        # ax.set_ylim(top=30, bottom=0)
+
+        # skewed dataset
+        # ax.set_ylim(top=0.03, bottom=0.003)
+
+        # large dataset
+        # ax.set_ylim(top=0.025, bottom=0)
+
+        ax.set_title(algo_name, fontsize=FONT_TITLE)
+        ax.set_xlabel("Iterace", fontsize=FONT_LABEL)
+        ax.set_ylabel("Fitness", fontsize=FONT_LABEL)
+        ax.grid(True)
+        ax.legend(fontsize=FONT_LEGEND)
+        ax.tick_params(axis="both", labelsize=FONT_TICKS)
+
+    # Remove unused subplots if fewer than 4 algorithms
+    for j in range(len(all_runs), 4):
+        fig.delaxes(axes[j])
+
+    fig.suptitle("Srovnání algoritmů – vývoj fitness v čase", fontsize=FONT_TITLE)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close(fig)
+
+
+# ----------------------------------------------------------------------------
+# 8. Diversity comparison across algorithms
+# ----------------------------------------------------------------------------
+
+def compare_diversity_progress(all_logbooks: dict[str, list], filename: str, dataset):
+    plt.figure(figsize=(12, 6))
+
+    colors = {
+        EA_DEAP: "blue",
+        EA_OWN: "green"
+    }
+
+    for algo_name, logbooks in all_logbooks.items():
+
+        runs_array = np.array(logbooks)  # shape: (num_runs, num_generations)
+        mean_vals = np.mean(runs_array, axis=0)
+        min_vals = np.min(runs_array, axis=0)
+        max_vals = np.max(runs_array, axis=0)
+
+        num_generations = runs_array.shape[1]
+        generations = list(range(num_generations))  # [0, 1, ..., n]
+
+        color = colors.get(algo_name, None)
+
+        # Fill between min and max
+        plt.fill_between(generations, min_vals, max_vals, alpha=0.2, label=f"{algo_name} (rozsah)", color=color)
+        # Plot mean
+        plt.plot(generations, mean_vals, label=f"{algo_name} (průměr)", color=color)
+
+    plt.xlabel("Generace", fontsize=FONT_LABEL)
+    plt.ylabel("Diverzita populace", fontsize=FONT_LABEL)
+    plt.title("Srovnání diverzity mezi algoritmy", fontsize=FONT_TITLE)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.legend(fontsize=FONT_LEGEND)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    plt.tight_layout()
+    plt.savefig(f"output_data/{dataset}/visualisation/{filename}")
+    plt.close()

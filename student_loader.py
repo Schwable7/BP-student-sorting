@@ -12,6 +12,9 @@ def load_students(filename: str) -> list[dict]:
     # Identify dynamic "ne_spolu_xx" columns
     ne_spolu_cols = [col for col in df.columns if col.startswith("not_together_")]
 
+    # Identify dynamic "spolu_xx" columns
+    spolu_cols = [col for col in df.columns if col.startswith("together_")]
+
     # Convert dataframe to structured list
     students = []
     for _, row in df.iterrows():
@@ -26,13 +29,16 @@ def load_students(filename: str) -> list[dict]:
             GENDER: row[GENDER],
             AGE: age,
             DEFERRAL: int(row[DEFERRAL]),
-            TOGETHER: int(row[TOGETHER]),
+            # TOGETHER: int(row[TOGETHER]),
             LEARNING_DISABILITIES: int(row[LEARNING_DISABILITIES]),
             TALENT: int(row[TALENT]),
             DIFF_MOTHER_LANG: int(row[DIFF_MOTHER_LANG])
         }
         # Add "ne_spolu_xx" fields separately
         for col in ne_spolu_cols:
+            student[col] = row[col] if pd.notna(row[col]) else None
+        # Add "spolu_xx" fields separately
+        for col in spolu_cols:
             student[col] = row[col] if pd.notna(row[col]) else None
 
         students.append(student)

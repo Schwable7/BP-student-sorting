@@ -1,21 +1,21 @@
-import random
 import logging
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
+import deap.algorithms
 import deap.base
 import deap.creator
 import deap.tools
-import deap.algorithms
 import pandas as pd
 from deap.tools import Logbook
 
-from constants import NUM_CLASSES, POPULATION_SIZE, GENERATIONS, CX_PROB, MUT_PROB
+from constants import NUM_CLASSES, POPULATION_SIZE, GENERATIONS, CX_PROB, MUT_PROB, STUDENTS_PATH, TOURNAMENT_SIZE
 from fitness import fitness, fitness_simple
 from helper_functions import convert_individual_to_classes, compute_population_diversity, compute_relative_statistics, \
     print_relative_stats, print_total_stats
 from student_loader import load_students
 from visualisation import plot_hall_of_fame_heatmap, plot_fitness_progress, plot_diversity_progress, \
-    plot_mutation_crossover, plot_relative_statistics, visualize_multiplot, visualize_multiplot_simple
+    plot_relative_statistics, visualize_multiplot, visualize_multiplot_simple
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -35,10 +35,11 @@ def evaluate(individual: list[int], students: list[dict], num_classes: int) -> t
     classes = convert_individual_to_classes(individual, students, num_classes)
     fitness_result = fitness(classes, False)
     # fitness_result = fitness_simple(classes, False)
-    # Save the full fitness dict for later tracking
-    fitness_components_log[id(individual)] = fitness_result
 
-    return fitness_result["total_cost"],  # DEAP requires a tuple
+    # Uložíme přímo do jednotlivce
+    individual.fitness_components = fitness_result
+
+    return fitness_result["total_cost"],  # Musí být tuple
 
 
 mutation_counter = {"count": 0}
@@ -50,9 +51,9 @@ def counted_crossover(ind1, ind2):
     return deap.tools.cxOnePoint(ind1, ind2)
 
 
-def counted_mutation(ind):
+def counted_mutation(ind, num_classes: int):
     mutation_counter["count"] += 1
-    return mutate(ind, NUM_CLASSES)
+    return mutate(ind, num_classes)
 
 
 def mutate(individual: list[int], num_classes: int) -> tuple[list[int]]:
@@ -71,18 +72,18 @@ def get_crossover_count(_):
     return crossover_counter["count"]
 
 
-def evolution(students: list[dict]) -> tuple[list[list], Logbook]:
-
+def evolution(students: list[dict], dataset: str, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS) -> tuple[list[list], Logbook, timedelta, dict]:
+    start_time = datetime.now()
     toolbox = deap.base.Toolbox()
-    toolbox.register("individual", create_individual, students, NUM_CLASSES)
+    toolbox.register("individual", create_individual, students, num_classes)
     toolbox.register("population", deap.tools.initRepeat, list, toolbox.individual)
 
     toolbox.register("mate", deap.tools.cxOnePoint)
-    toolbox.register("mutate", mutate, num_classes=NUM_CLASSES)
-    toolbox.register("select", deap.tools.selTournament, tournsize=3)
-    toolbox.register("evaluate", evaluate, students=students, num_classes=NUM_CLASSES)
+    toolbox.register("mutate", mutate, num_classes=num_classes)
+    toolbox.register("select", deap.tools.selTournament, tournsize=TOURNAMENT_SIZE)
+    toolbox.register("evaluate", evaluate, students=students, num_classes=num_classes)
     toolbox.register("mate", counted_crossover)
-    toolbox.register("mutate", counted_mutation)
+    toolbox.register("mutate", counted_mutation, num_classes=num_classes)
 
     population = toolbox.population(n=POPULATION_SIZE)
 
@@ -94,9 +95,8 @@ def evolution(students: list[dict]) -> tuple[list[list], Logbook]:
 
     def extract_best_component(component: str):
         def extractor(population):
-            # Get the individual with the lowest total cost
             best_ind = min(population, key=lambda ind: ind.fitness.values[0])
-            return fitness_components_log[id(best_ind)][component]
+            return getattr(best_ind, "fitness_components", {}).get(component, 0.0)  # fallback = 0.0
 
         return extractor
 
@@ -122,18 +122,19 @@ def evolution(students: list[dict]) -> tuple[list[list], Logbook]:
     hall_of_fame = deap.tools.HallOfFame(5)  # Store the best individual
 
     population, logbook = deap.algorithms.eaSimple(
-        population, toolbox, cxpb=CX_PROB, mutpb=MUT_PROB, ngen=GENERATIONS,
+        population, toolbox, cxpb=CX_PROB, mutpb=MUT_PROB, ngen=generations,
         stats=stats, halloffame=hall_of_fame, verbose=True
     )
-
+    end_time = datetime.now()
+    execution_time = end_time - start_time
+    logging.info(f"Optimization completed in {execution_time}")
     best_individual = hall_of_fame[0]
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    plot_fitness_progress(logbook, f"EA/fitness_progress_{timestamp}.png")
-    plot_diversity_progress(logbook, f"EA/diversity_progress_{timestamp}.png")
-    plot_mutation_crossover(logbook, f"EA/mutation_crossover_{timestamp}.png")
-    plot_hall_of_fame_heatmap(hall_of_fame, filename=f"EA/HoF_heatmap_{timestamp}.png")
+    plot_fitness_progress(logbook, f"EA/fitness_progress_{timestamp}.png", dataset)
+    plot_diversity_progress(logbook, f"EA/diversity_progress_{timestamp}.png", dataset)
+    plot_hall_of_fame_heatmap(hall_of_fame, f"EA/HoF_heatmap_{timestamp}.png", dataset)
 
-    best_classes = [[] for _ in range(NUM_CLASSES)]
+    best_classes = [[] for _ in range(num_classes)]
     for student_idx, class_idx in enumerate(best_individual):
         best_classes[class_idx].append(students[student_idx])
 
@@ -149,20 +150,21 @@ def evolution(students: list[dict]) -> tuple[list[list], Logbook]:
     together_penalties = df["best_together_penalty"].tolist()
     not_together_penalties = df["best_not_together_penalty"].tolist()
 
-    visualize_multiplot(costs, size_devs, boys_devs, girls_devs, together_penalties, not_together_penalties, GENERATIONS + 1, f"EA/multiplot_{timestamp}.png")
-    # visualize_multiplot_simple(costs, size_devs, boys_devs, girls_devs, GENERATIONS + 1,f"EA/multi_plot_simple_{timestamp}.png")
-    return best_classes, logbook
+    visualize_multiplot(costs, size_devs, boys_devs, girls_devs, together_penalties, not_together_penalties, generations + 1, f"EA/multiplot_{timestamp}.png", dataset)
+    # visualize_multiplot_simple(costs, size_devs, boys_devs, girls_devs, generations + 1,f"EA/multi_plot_simple_{timestamp}.png", dataset)
+
+    # Compute print and visualise relative statistics
+    relative_stats = compute_relative_statistics(students, best_classes)
+    print_relative_stats(relative_stats)
+    plot_relative_statistics(relative_stats, f"EA/relative_distribution_{datetime.now().timestamp()}.png", dataset)
+    # Print total statistics
+    print_total_stats(students, best_classes)
+    return best_classes, logbook, execution_time, relative_stats
 
 
 if __name__ == "__main__":
-    students = load_students("input_data/students_04.xlsx")
+    students = load_students(STUDENTS_PATH)
     for i in range(1):
-        sorted_classes, logbook = evolution(students)
+        sorted_classes, logbook, execution_time, relative_stats = evolution(students, "basic")
 
-        # Compute print and visualise relative statistics
-        relative_stats = compute_relative_statistics(sorted_classes)
-        print_relative_stats(relative_stats)
-        plot_relative_statistics(relative_stats, f"EA/relative_distribution_{datetime.now().timestamp()}.png")
 
-        # Print total statistics
-        print_total_stats(students, sorted_classes)

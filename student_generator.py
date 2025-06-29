@@ -5,7 +5,8 @@ import random
 from datetime import datetime, timedelta
 from constants import STUDENTS_COUNT, FEMALE, MALE, ID, CLASS_ID, FIRST_NAME, LAST_NAME, GENDER, BIRTH_DATE, DEFERRAL, \
     TOGETHER, LEARNING_DISABILITIES, TALENT, DIFF_MOTHER_LANG, NOT_TOGETHER_01, NOT_TOGETHER_02, NOT_TOGETHER_03, \
-    NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07
+    NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07, STUDENTS_FILENAME, TOGETHER_01, TOGETHER_02, \
+    TOGETHER_03, TOGETHER_04, TOGETHER_05, TOGETHER_06, TOGETHER_07
 
 
 def generate_student_age():
@@ -15,11 +16,12 @@ def generate_student_age():
     return (start_date + timedelta(days=random.randint(0, (end_date - start_date).days))).date()
 
 
-def generate_students(students_count: int):
+def generate_students(students_count: int, iteration: int):
     pd.set_option('display.width', 1000)
 
     # Jmena sloupcu tabulky
     col_names_list = [ID, CLASS_ID, FIRST_NAME, LAST_NAME, GENDER, BIRTH_DATE, DEFERRAL, TOGETHER,
+                      TOGETHER_01, TOGETHER_02, TOGETHER_03, TOGETHER_04, TOGETHER_05, TOGETHER_06, TOGETHER_07,
                       LEARNING_DISABILITIES, TALENT, DIFF_MOTHER_LANG, NOT_TOGETHER_01, NOT_TOGETHER_02,
                       NOT_TOGETHER_03, NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07]
 
@@ -37,10 +39,11 @@ def generate_students(students_count: int):
     df[CLASS_ID] = np.random.choice(class_id_list, students_count)
     df[FIRST_NAME] = np.random.choice(name_list, students_count)
     df[LAST_NAME] = np.random.choice(surname_list, students_count)
+
     df[GENDER] = np.random.choice(gender_list, students_count)
     df[BIRTH_DATE] = [generate_student_age() for _ in range(students_count)]
     df[DEFERRAL] = np.random.choice(rand_bin_025, students_count)
-    df[TOGETHER] = np.random.choice(rand_bin_025, students_count)
+    # df[TOGETHER] = np.random.choice(rand_bin_025, students_count)
 
     # New rare features
     df[LEARNING_DISABILITIES] = np.random.choice(rand_bin_005, students_count)
@@ -52,10 +55,17 @@ def generate_students(students_count: int):
                 NOT_TOGETHER_04, NOT_TOGETHER_05, NOT_TOGETHER_06, NOT_TOGETHER_07]:
         df[col] = np.random.choice(rand_bin_005, students_count)
 
+    # together flags (1% chance)
+    for col in [TOGETHER_01, TOGETHER_02,
+                TOGETHER_03, TOGETHER_04, TOGETHER_05, TOGETHER_06, TOGETHER_07]:
+        df[col] = np.random.choice(rand_bin_005, students_count)
+
     print(df)
 
-    df.to_excel("input_data/students_04.xlsx", sheet_name='studenti', index=False)
+    df.to_excel(f"input_data/students_555_{iteration}.xlsx", sheet_name='studenti', index=False)
 
 
 if __name__ == "__main__":
-    generate_students(STUDENTS_COUNT)
+    for i in range(1):
+        print(f"Generating students {i + 1}/10")
+        generate_students(STUDENTS_COUNT, i)

@@ -1,20 +1,20 @@
 import copy
-import random
 import logging
+import random
 from datetime import datetime
 
+import deap.algorithms
 import deap.base
 import deap.creator
 import deap.tools
-import deap.algorithms
 
-from constants import NUM_CLASSES, POPULATION_SIZE, GENERATIONS, CX_PROB, MUT_PROB
+from constants import NUM_CLASSES, POPULATION_SIZE, CX_PROB, MUT_PROB
 from fitness import fitness
 from helper_functions import compute_relative_statistics, \
     print_relative_stats, print_total_stats, compute_population_diversity_2, convert_classes_to_individual
 from student_loader import load_students
 from visualisation import plot_hall_of_fame_heatmap, plot_fitness_progress, plot_diversity_progress, \
-    plot_mutation_crossover, plot_relative_statistics
+    plot_relative_statistics
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -129,7 +129,6 @@ def evolution(students: list[dict]) -> list[list]:
     best_individual = copy.deepcopy(hall_of_fame[0])
     plot_fitness_progress(logbook, f"EA2/fitness_progress_{datetime.now().timestamp()}.png")
     plot_diversity_progress(logbook, f"EA2/diversity_progress_{datetime.now().timestamp()}.png")
-    plot_mutation_crossover(logbook, f"EA2/mutation_crossover_{datetime.now().timestamp()}.png")
     plot_hall_of_fame_heatmap(hall_of_fame_converted, filename=f"EA2/HoF_heatmap_{datetime.now().timestamp()}.png")
 
     logging.info(f"Final solution found with cost {best_individual.fitness.values[0]}")

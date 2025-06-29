@@ -1,9 +1,8 @@
-import random
-import math
 import logging
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
-from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, HALL_OF_FAME_SIZE
+from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, HALL_OF_FAME_SIZE, STUDENTS_PATH
 from data_exporter import export_hall_of_fame
 from fitness import fitness, fitness_simple
 from helper_functions import convert_classes_to_individual, swap_or_move, compute_relative_statistics, \
@@ -16,8 +15,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 def simulated_annealing(students: list[dict], num_classes: int, initial_temp, cooling_rate,
-                        max_iterations) -> tuple[list[list], list[float]]:
+                        max_iterations, dataset) -> tuple[list[list], list[float], timedelta, dict]:
     # Randomly assign students to classes
+    start_time = datetime.now()
     classes = [[] for _ in range(num_classes)]
     random.shuffle(students)
 
@@ -87,41 +87,44 @@ def simulated_annealing(students: list[dict], num_classes: int, initial_temp, co
         # logging.info(f"Iteration {iteration}: Current best cost = {current_score}, Temperature = {temp:.2f}")
 
     logging.info(f"Final solution found with cost {current_score}")
+    end_time = datetime.now()
+    execution_time = end_time - start_time
+    logging.info(f"Simulated Annealing completed in {execution_time} seconds.")
+
 
     # Convert and plot hall of fame
     hall_of_fame_converted = [convert_classes_to_individual(hof[0]) for hof in hall_of_fame]
-    plot_hall_of_fame_heatmap(hall_of_fame_converted, f"SA/HoF_{datetime.now().timestamp()}.png")
+    plot_hall_of_fame_heatmap(hall_of_fame_converted, f"SA/HoF_{datetime.now().timestamp()}.png", dataset)
 
     export_hall_of_fame(hall_of_fame, f"SA/HoF_{datetime.now().timestamp()}.xlsx")
 
     visualize_multiplot(
         costs, size_devs, boys_devs, girls_devs, tgthr_penalties, not_tgthr_penalties, max_iterations,
-        f"SA/multi_plot_{datetime.now().timestamp()}.png"
+        f"SA/multi_plot_{datetime.now().timestamp()}.png", dataset
     )
 
     # visualize_multiplot_simple(
     #     costs, size_devs, boys_devs, girls_devs, max_iterations,
-    #     f"SA/multi_plot_simple_{datetime.now().timestamp()}.png"
+    #     f"SA/multi_plot_simple_{datetime.now().timestamp()}.png", dataset
     # )
 
-    return classes, costs
+    relative_stats = compute_relative_statistics(students, classes)
+    print_relative_stats(relative_stats)
+    plot_relative_statistics(relative_stats, f"SA/relative_distribution_{datetime.now().timestamp()}.png", dataset)
+    print_total_stats(students, classes)
+    return classes, costs, execution_time, relative_stats
 
 
 if __name__ == "__main__":
-    students = load_students("input_data/students_04.xlsx")
+    students = load_students(STUDENTS_PATH)
     for i in range(1):
-        sorted_classes, costs = simulated_annealing(
+        sorted_classes, costs, execution_time, relative_stats = simulated_annealing(
             students=students,
             num_classes=NUM_CLASSES,
             initial_temp=INITIAL_TEMP,
             cooling_rate=COOLING_RATE,
-            max_iterations=MAX_ITERATIONS
+            max_iterations=MAX_ITERATIONS,
+            dataset="basic"
         )
 
-        # Compute print and visualise relative statistics
-        relative_stats = compute_relative_statistics(sorted_classes)
-        print_relative_stats(relative_stats)
-        plot_relative_statistics(relative_stats, f"SA/relative_distribution_{datetime.now().timestamp()}.png")
 
-        # Print total statistics
-        print_total_stats(students, sorted_classes)
