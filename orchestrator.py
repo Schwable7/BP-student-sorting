@@ -4,7 +4,7 @@ from datetime import datetime
 
 from beam_search import beam_search
 from constants import NUM_CLASSES, INITIAL_TEMP, COOLING_RATE, MAX_ITERATIONS, BEAM_WIDTH, STUDENTS_PATH, BEAM_SEARCH, \
-    SIMULATED_ANNEALING, EA_DEAP, EA_OWN, BEAM_ITERATIONS
+    SIMULATED_ANNEALING, EA_DEAP, EA_OWN, BEAM_ITERATIONS, CX_PROB, MUT_PROB, TOURNAMENT_SIZE, ELITE_COUNT
 from evolution import evolution
 from evolution_own import evolutionary_algorithm
 from helper_functions import export_fitness_summary_to_csv, save_all_statistics
@@ -15,8 +15,9 @@ from visualisation import compare_algorithms_graph, compare_diversity_progress, 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 def run_all(students_path: str, dataset: str):
-    students = load_students("input_data/"+students_path)
+    students = load_students("input_data/" + students_path)
     classes_sa, costs_sa, time_sa, stats_sa = simulated_annealing(
         students=students,
         num_classes=NUM_CLASSES,
@@ -34,9 +35,26 @@ def run_all(students_path: str, dataset: str):
         dataset=dataset,
     )
 
-    classes_ea, logbook_deap, time_ea_deap, stats_ea_deap = evolution(students, dataset, NUM_CLASSES, GENERATIONS)
+    classes_ea, logbook_deap, time_ea_deap, stats_ea_deap = evolution(
+        students=students,
+        dataset=dataset,
+        mut_prob=MUT_PROB,
+        cx_prob=CX_PROB,
+        tournament_size=TOURNAMENT_SIZE,
+        num_classes=NUM_CLASSES,
+        generations=GENERATIONS
+    )
 
-    classes_ea_own, costs_ea, logbook_own, time_ea_own, stats_ea_own = evolutionary_algorithm(students, dataset, NUM_CLASSES, GENERATIONS)
+    classes_ea_own, costs_ea, logbook_own, time_ea_own, stats_ea_own = evolutionary_algorithm(
+        students=students,
+        dataset=dataset,
+        mut_prob=MUT_PROB,
+        cx_prob=CX_PROB,
+        tournament_size=TOURNAMENT_SIZE,
+        elite_count=ELITE_COUNT,
+        num_classes=NUM_CLASSES,
+        generations=GENERATIONS
+    )
 
     return {
         "fitness": {

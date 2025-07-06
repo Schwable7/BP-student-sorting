@@ -56,9 +56,9 @@ def counted_mutation(ind, num_classes: int):
     return mutate(ind, num_classes)
 
 
-def mutate(individual: list[int], num_classes: int) -> tuple[list[int]]:
+def mutate(individual: list[int], num_classes: int, mut_prob: float) -> tuple[list[int]]:
     """ Mutates an individual by randomly changing a student's class assignment. """
-    if random.random() < MUT_PROB:
+    if random.random() < mut_prob:
         idx = random.randint(0, len(individual) - 1)
         individual[idx] = random.randint(0, num_classes - 1)
     return individual,
@@ -72,15 +72,15 @@ def get_crossover_count(_):
     return crossover_counter["count"]
 
 
-def evolution(students: list[dict], dataset: str, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS) -> tuple[list[list], Logbook, timedelta, dict]:
+def evolution(students: list[dict], dataset: str, mut_prob: float, cx_prob: float, tournament_size: int, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS) -> tuple[list[list], Logbook, timedelta, dict]:
     start_time = datetime.now()
     toolbox = deap.base.Toolbox()
     toolbox.register("individual", create_individual, students, num_classes)
     toolbox.register("population", deap.tools.initRepeat, list, toolbox.individual)
 
     toolbox.register("mate", deap.tools.cxOnePoint)
-    toolbox.register("mutate", mutate, num_classes=num_classes)
-    toolbox.register("select", deap.tools.selTournament, tournsize=TOURNAMENT_SIZE)
+    toolbox.register("mutate", mutate, num_classes=num_classes, mut_prob=mut_prob)
+    toolbox.register("select", deap.tools.selTournament, tournsize=tournament_size)
     toolbox.register("evaluate", evaluate, students=students, num_classes=num_classes)
     toolbox.register("mate", counted_crossover)
     toolbox.register("mutate", counted_mutation, num_classes=num_classes)
@@ -122,7 +122,7 @@ def evolution(students: list[dict], dataset: str, num_classes: int = NUM_CLASSES
     hall_of_fame = deap.tools.HallOfFame(5)  # Store the best individual
 
     population, logbook = deap.algorithms.eaSimple(
-        population, toolbox, cxpb=CX_PROB, mutpb=MUT_PROB, ngen=generations,
+        population, toolbox, cxpb=cx_prob, mutpb=mut_prob, ngen=generations,
         stats=stats, halloffame=hall_of_fame, verbose=True
     )
     end_time = datetime.now()

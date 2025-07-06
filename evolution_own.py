@@ -92,7 +92,7 @@ def balance_classes(classes: list[list[dict]], num_classes) -> list[list[dict]]:
     return new_classes
 
 
-def evolutionary_algorithm(students: list[dict], dataset, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS):
+def evolutionary_algorithm(students: list[dict], dataset, mut_prob: float, cx_prob: float, tournament_size: int, elite_count: int, num_classes: int = NUM_CLASSES, generations: int = GENERATIONS):
     start_time = datetime.now()
     # Initialize population
     population = [generate_random_solution(students, num_classes) for _ in range(POPULATION_SIZE)]
@@ -110,7 +110,7 @@ def evolutionary_algorithm(students: list[dict], dataset, num_classes: int = NUM
         # evaluated = [(individual, fitness_simple(individual, False)) for individual in population]
         evaluated.sort(key=lambda x: x[1]["total_cost"])
         # Select elites
-        elites = [copy.deepcopy(individual) for individual, _ in evaluated[:ELITE_COUNT]]
+        elites = [copy.deepcopy(individual) for individual, _ in evaluated[:elite_count]]
 
         # Track best solution
         fitness_dict = evaluated[0][1]
@@ -151,7 +151,7 @@ def evolutionary_algorithm(students: list[dict], dataset, num_classes: int = NUM
             f"Generation {generation} - Best fitness: {gen_best_fitness} Average fitness: {sum(f["total_cost"] for _, f in evaluated) / len(evaluated)}")
 
         # Selection (Tournament)
-        selected = tournament_selection(evaluated, TOURNAMENT_SIZE)
+        selected = tournament_selection(evaluated, tournament_size)
 
         # Create next generation
         next_generation = []
@@ -160,19 +160,19 @@ def evolutionary_algorithm(students: list[dict], dataset, num_classes: int = NUM
             parent1 = random.choice(selected)
             parent2 = random.choice(selected)
 
-            if random.random() < CX_PROB:
+            if random.random() < cx_prob:
                 child1, child2 = crossover(parent1, parent2, num_classes)
             else:
                 child1, child2 = copy.deepcopy(parent1), copy.deepcopy(parent2)
 
-            if random.random() < MUT_PROB:
+            if random.random() < mut_prob:
                 mutate(child1, num_classes)
-            if random.random() < MUT_PROB:
+            if random.random() < mut_prob:
                 mutate(child2, num_classes)
 
             next_generation.extend([child1, child2])
 
-        next_generation = elites + next_generation[:POPULATION_SIZE - ELITE_COUNT]
+        next_generation = elites + next_generation[:POPULATION_SIZE - elite_count]
         population = next_generation
 
     end_time = datetime.now()
